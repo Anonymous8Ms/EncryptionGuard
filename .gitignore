@@ -43,3 +43,8 @@ Thumbs.db
 mlruns/
 mlartifacts/
 *.db
+
+# ── Project docs (not for repo) ─────────────
+*.pdf
+.mimocode/
+docs/compose/
