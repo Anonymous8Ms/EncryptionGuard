@@ -1,0 +1,44 @@
+# ── Python ────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# ── Testing ──────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# ── Environment ──────────────────────────────
+backend/.env
+
+# ── Node.js ──────────────────────────────────
+node_modules/
+frontend/dist/
+.vite/
+
+# ── IDE ──────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Jupyter ──────────────────────────────────
+.ipynb_checkpoints/
+
+# ── ML Artifacts ─────────────────────────────
+*.pkl
+*.joblib
+mlruns/
+mlartifacts/
