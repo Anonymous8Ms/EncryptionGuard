@@ -1,24 +1,24 @@
-# EncryptionGuard v5
+# EncryptionGuard v5 (Cloud-Light)
 
-> ML-powered encryption compliance monitoring platform with real-time graph analysis, risk scoring, and automated remediation workflows.
+Explainable AI for detecting coordinated refund abuse on Razorpay.
 
 ## Overview
 
-EncryptionGuard analyzes your infrastructure's encryption posture by building a property graph of certificates, keys, services, and their relationships. An XGBoost risk-scoring model flags non-compliant configurations in real time, while a Celery worker pipeline handles automated certificate rotation and alerting.
+EncryptionGuard identifies suspicious accounts, devices, IPs, and payment tokens that collectively exhibit refund-abuse behavior. The system estimates merchant exposure, explains evidence using SHAP and graph analysis, and recommends bounded responses (allow, monitor, step_up_verification, manual_review, hold_for_review).
 
 ### Key Features
 
-- **Graph-based asset mapping** — Neo4j stores certificates, keys, services, and their relationships for deep traversal queries.
-- **ML risk scoring** — XGBoost model with SHAP explainability scores every asset; Optuna tunes hyper-parameters.
-- **Real-time monitoring** — Celery workers poll for expiring certs, revoked keys, and policy violations.
-- **Interactive dashboard** — React + Cytoscape.js visualizes the encryption graph with drill-down risk details.
-- **Payment integration** — Razorpay handles subscription billing for the SaaS tier.
+- **Coordinated ring detection** — Neo4j graph analysis with Louvain community detection and PageRank centrality
+- **ML risk scoring** — XGBoost with Optuna tuning, SHAP TreeExplainer for feature-level explanations
+- **Real-time webhook processing** — FastAPI receiver with HMAC-SHA256 validation and idempotent processing
+- **Analyst dashboard** — React + TypeScript + Cytoscape.js interactive graph visualization
+- **LLM assistant** — Xiaomi MiMo API for evidence summarization with deterministic policy checker
+- **Cloud-first** — Supabase (PostgreSQL), Neo4j Aura, Redis Cloud — no local Docker required
 
 ## Quick Start
 
 ```bash
-# 1. Clone and install
-git clone <repo-url> && cd encryption-guard
+# 1. Install dependencies
 make install
 
 # 2. Configure environment
@@ -31,12 +31,15 @@ make generate
 # 4. Train the ML model
 make train
 
-# 5. Run development servers
+# 5. Evaluate model
+make evaluate
+
+# 6. Run development servers
 make dev
 # Backend API → http://localhost:8000
-# Frontend   → http://localhost:5173
+# Frontend   → http://localhost:3000
 
-# 6. Run tests
+# 7. Run tests
 make test
 ```
 
@@ -44,8 +47,8 @@ make test
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Frontend   │────▶│  FastAPI     │────▶│  PostgreSQL  │
-│  React+Vite  │     │  Backend     │     │  (Supabase)  │
+│   Frontend   │────▶│  FastAPI     │────▶│  Supabase    │
+│  React+Vite  │     │  Backend     │     │ (PostgreSQL) │
 └──────────────┘     └──────┬───────┘     └──────────────┘
                             │
                    ┌────────┼────────┐
@@ -58,58 +61,104 @@ make test
                    ┌────────┼────────┐
                    ▼                 ▼
              ┌──────────┐     ┌──────────┐
-             │ XGBoost  │     │ Razorpay │
-             │ ML Model │     │ Billing  │
+             │ XGBoost  │     │ MiMo API │
+             │ ML Model │     │ (LLM)    │
              └──────────┘     └──────────┘
 ```
 
 ## API Endpoints
 
-| Method | Endpoint                    | Description                          |
-|--------|-----------------------------|--------------------------------------|
-| GET    | `/api/v1/health`            | Health check                         |
-| GET    | `/api/v1/assets`            | List all encryption assets           |
-| GET    | `/api/v1/assets/{id}`       | Get asset detail with risk score     |
-| POST   | `/api/v1/assets`            | Register a new asset                 |
-| GET    | `/api/v1/graph`             | Full graph data for visualization    |
-| GET    | `/api/v1/graph/neighbors/{id}` | N-hop neighbors of an asset      |
-| GET    | `/api/v1/risks`             | List flagged risks                   |
-| POST   | `/api/v1/risks/{id}/remediate` | Trigger remediation workflow      |
-| GET    | `/api/v1/scores`            | Aggregate risk scores                |
-| POST   | `/api/v1/webhooks/razorpay` | Razorpay payment webhook             |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| POST | `/api/webhooks/razorpay` | Razorpay webhook receiver |
+| GET | `/api/cases` | List cases with filters |
+| GET | `/api/cases/{id}` | Case detail with evidence |
+| POST | `/api/feedback` | Submit analyst feedback |
+
+## Tech Stack
+
+| Concern | Choice |
+|---------|--------|
+| API | Python + FastAPI |
+| Database | Supabase (PostgreSQL) |
+| Graph store | Neo4j Aura |
+| Velocity cache | Redis Cloud |
+| Background queue | Celery with Redis broker |
+| Frontend | React + TypeScript + Vite + Tailwind CSS |
+| Graph visualization | Cytoscape.js |
+| ML model | XGBoost with Optuna tuning |
+| Explainability | SHAP TreeExplainer |
+| Analyst assistant | Xiaomi MiMo API |
 
 ## Project Structure
 
 ```
-encryption-guard/
+Encryption Guard/
+├── Makefile                    # Build commands
+├── notebooks/                  # Jupyter analysis
+│   ├── 01_eda.ipynb           # Exploratory data analysis
+│   ├── 02_feature_correlation.ipynb
+│   ├── 03_pr_curves.ipynb     # Precision-recall curves
+│   └── 04_shap_plots.ipynb    # SHAP visualizations
 ├── backend/
 │   ├── app/
-│   │   ├── api/            # FastAPI route handlers
-│   │   ├── models/         # SQLAlchemy & Pydantic models
-│   │   ├── services/       # Business logic layer
-│   │   ├── workers/        # Celery task definitions
-│   │   └── config.py       # Pydantic-settings configuration
-│   ├── data/               # Synthetic data generator
-│   ├── features/           # Feature engineering pipelines
-│   ├── ml/                 # Model training & evaluation
-│   ├── migrations/         # Alembic migration scripts
-│   ├── tests/              # Pytest test suite
-│   ├── .env.example        # Environment variable template
-│   └── requirements.txt    # Python dependencies
+│   │   ├── main.py            # FastAPI application
+│   │   ├── config.py          # Settings from .env
+│   │   ├── api/               # Route handlers
+│   │   ├── models/            # SQLAlchemy models
+│   │   ├── services/          # Business logic
+│   │   └── workers/           # Celery tasks
+│   ├── features/              # Shared feature library
+│   │   ├── velocity.py        # Redis velocity features
+│   │   ├── graph.py           # Neo4j graph features
+│   │   └── schema.py          # FeatureVector model
+│   ├── ml/
+│   │   ├── train.py           # XGBoost training + Optuna
+│   │   ├── evaluate.py        # Model evaluation
+│   │   └── model_card.py      # Model card generator
+│   ├── data/
+│   │   └── generator.py       # Scenario generator
+│   ├── tests/                 # Test suite
+│   ├── migrations/            # SQL schema
+│   ├── requirements.txt
+│   └── .env.example
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Route-level page components
-│   │   └── services/       # API client & state management
-│   └── package.json        # Node.js dependencies
-├── notebooks/              # Jupyter notebooks for exploration
-├── docs/
-│   └── compose/            # Design specs & implementation plans
-│       ├── specs/
-│       └── plans/
-├── Makefile                # Dev workflow commands
-└── README.md               # This file
+│   │   ├── components/        # AlertQueue, GraphView, FeedbackButtons
+│   │   ├── pages/             # Dashboard, CaseDetail
+│   │   └── services/          # API client
+│   └── package.json
+└── docs/
+    └── compose/               # Design specs & plans
 ```
+
+## ML Pipeline
+
+1. **Data generation** — Synthetic scenario generator with 5 types: Normal, Legitimate Refund, Shared Network, Single Abuse, Coordinated Ring
+2. **Feature engineering** — Shared `features/` module used by both online scoring and offline training (prevents training-serving skew)
+3. **Training** — XGBoost with Bayesian optimization (Optuna, 100 trials), class-weighted loss
+4. **Evaluation** — PR-AUC, precision, recall, ring-level metrics, calibration, cost-sensitive thresholds
+5. **Explainability** — SHAP TreeExplainer for feature contributions, graph evidence for relationship analysis
+
+## Graph Model
+
+- **Nodes**: Account, Device, IPAddress, PaymentToken, Order, Payment, Refund
+- **Edges**: USES, ORIGINATED_FROM, SHIPS_TO, PAID_WITH, PLACED, HAS_PAYMENT, HAS_REFUND
+- **TTL**: 90-day edge expiration with query-time filtering and weekly hard delete
+- **Algorithms**: Connected components, Louvain community detection, PageRank centrality
+
+## Testing
+
+```bash
+make test
+```
+
+Tests cover:
+- Webhook signature verification and idempotency
+- Feature vector serialization and type enforcement
+- Split leakage prevention (ring IDs, scenario IDs)
+- Policy checker (prohibited content, irreversible actions, citation validation)
 
 ## License
 
