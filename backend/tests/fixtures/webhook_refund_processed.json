@@ -1,0 +1,1 @@
+{"event": "refund.processed", "payload": {"refund": {"entity": {"id": "rfnd_test_123", "payment_id": "pay_test_456", "amount": 15000, "status": "processed", "reason": "duplicate"}}}}
