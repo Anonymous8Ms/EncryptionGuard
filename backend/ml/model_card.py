@@ -1,284 +1,365 @@
 """
-Model Card Generator
-====================
+EncryptionGuard Model Card Generator
+=====================================
 
-Reads ``metadata.json`` (produced by ``train.py``) and
-``evaluation_results.json`` (produced by ``evaluate.py``) and generates a
-comprehensive ``MODEL_CARD.md`` following the Model Cards for Model
-Reporting framework (Mitchell et al., 2019).
+Generates a comprehensive MODEL_CARD.md from training metadata and
+evaluation results, following model card best practices for transparency
+and responsible AI documentation.
 
-Usage::
-
-    python -m backend.ml.model_card \\
-        --metadata ./artifacts/metadata.json \\
-        --evaluation ./artifacts/evaluation_results.json \\
-        --output ./MODEL_CARD.md
+Usage:
+    python -m backend.ml.model_card \
+        --metadata-path backend/ml/artifacts/metadata.json \
+        --eval-path backend/ml/artifacts/evaluation_results.json \
+        --output-path backend/ml/artifacts/MODEL_CARD.md
 """
-
-from __future__ import annotations
 
 import argparse
 import json
-import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
-
-logger = logging.getLogger(__name__)
 
 
 def generate_model_card(
-    metadata_path: str | Path,
-    eval_path: str | Path,
-    output_path: str | Path = "MODEL_CARD.md",
-) -> str:
+    metadata_path: str,
+    eval_path: str,
+    output_path: str,
+) -> None:
     """Generate a MODEL_CARD.md from training metadata and evaluation results.
 
-    Parameters
-    ----------
-    metadata_path : str or Path
-        Path to ``metadata.json`` produced by the training pipeline.
-    eval_path : str or Path
-        Path to ``evaluation_results.json`` produced by the evaluation script.
-    output_path : str or Path
-        Destination for the generated Markdown file.
+    Reads metadata.json and evaluation_results.json, then produces a
+    comprehensive model card document covering model details, intended use,
+    training data, features, hyperparameters, performance metrics, limitations,
+    ethical considerations, and monitoring recommendations.
 
-    Returns
-    -------
-    str
-        The full Markdown content of the model card.
+    Args:
+        metadata_path: Path to metadata.json from training.
+        eval_path: Path to evaluation_results.json from evaluation.
+        output_path: Path to write the MODEL_CARD.md file.
+
+    Raises:
+        FileNotFoundError: If metadata or evaluation files do not exist.
     """
-    with open(metadata_path, "r", encoding="utf-8") as fh:
-        metadata: Dict[str, Any] = json.load(fh)
+    # Load metadata
+    meta_file = Path(metadata_path)
+    if not meta_file.exists():
+        raise FileNotFoundError(f"Metadata file not found: {meta_file}")
+    with open(meta_file, "r") as f:
+        metadata = json.load(f)
 
-    with open(eval_path, "r", encoding="utf-8") as fh:
-        evaluation: Dict[str, Any] = json.load(fh)
+    # Load evaluation results
+    eval_file = Path(eval_path)
+    if not eval_file.exists():
+        raise FileNotFoundError(f"Evaluation file not found: {eval_file}")
+    with open(eval_file, "r") as f:
+        eval_results = json.load(f)
 
-    # Unpack commonly used fields
+    # Extract values
     model_type = metadata.get("model_type", "Unknown")
     baseline_type = metadata.get("baseline_type", "Unknown")
-    features = metadata.get("feature_names", [])
-    hyperparams = metadata.get("hyperparameters", {})
-    val_pr_auc = metadata.get("validation_pr_auc", "N/A")
-    created_at = metadata.get("created_at", datetime.now(timezone.utc).isoformat())
-    xgb_ver = metadata.get("xgboost_version", "N/A")
-    optuna_ver = metadata.get("optuna_version", "N/A")
+    feature_names = metadata.get("feature_names", [])
+    hyperparameters = metadata.get("hyperparameters", {})
+    val_prauc = metadata.get("validation_prauc", 0.0)
+    training_ts = metadata.get("training_timestamp", "Unknown")
+    n_features = metadata.get("n_features", len(feature_names))
 
-    test_pr_auc = evaluation.get("pr_auc", "N/A")
-    cm = evaluation.get("confusion_matrix", [[0, 0], [0, 0]])
-    report = evaluation.get("classification_report", {})
+    test_prauc = eval_results.get("pr_auc", 0.0)
+    cm = eval_results.get("confusion_matrix", [[0, 0], [0, 0]])
+    report = eval_results.get("classification_report", {})
+    test_samples = eval_results.get("test_samples", 0)
+    positive_samples = eval_results.get("positive_samples", 0)
+    negative_samples = eval_results.get("negative_samples", 0)
 
-    # Format confusion matrix
-    if len(cm) == 2 and len(cm[0]) == 2:
-        cm_text = (
-            f"| | Predicted Legit | Predicted Abuse |\n"
-            f"|---|---|---|\n"
-            f"| **Actual Legit** | {cm[0][0]} (TN) | {cm[0][1]} (FP) |\n"
-            f"| **Actual Abuse** | {cm[1][0]} (FN) | {cm[1][1]} (TP) |"
-        )
-    else:
-        cm_text = f"```\n{cm}\n```"
+    # Extract per-class metrics
+    class_0 = report.get("0", {})
+    class_1 = report.get("1", {})
+    accuracy = report.get("accuracy", 0.0)
+    macro_avg = report.get("macro avg", {})
+    weighted_avg = report.get("weighted avg", {})
 
-    # Format classification report rows for class 0 and 1
-    def _fmt_class(cls_key: str, label: str) -> str:
-        cls = report.get(cls_key, {})
-        if not cls:
-            return ""
-        return (
-            f"| {label} | {cls.get('precision', 'N/A'):.4f} | "
-            f"{cls.get('recall', 'N/A'):.4f} | {cls.get('f1-score', 'N/A'):.4f} | "
-            f"{cls.get('support', 'N/A')} |\n"
-        )
-
-    report_table = (
-        "| Class | Precision | Recall | F1-Score | Support |\n"
-        "|---|---|---|---|---|\n"
-        + _fmt_class("0", "Legitimate")
-        + _fmt_class("1", "Abuse")
+    # Format hyperparameters table
+    hp_rows = "\n".join(
+        f"| {k} | {v} |" for k, v in hyperparameters.items()
     )
 
-    # Format hyperparameters
-    hp_lines = "\n".join(
-        f"| `{k}` | `{v}` |" for k, v in hyperparams.items()
+    # Format features table
+    feature_descriptions = {
+        "total_orders": "Total number of orders placed by the account",
+        "total_refunds": "Total number of refund events",
+        "total_amount": "Sum of all order amounts",
+        "avg_amount": "Average order amount",
+        "max_amount": "Maximum single order amount",
+        "refund_rate": "Ratio of refunds to total orders",
+        "refund_ratio": "Ratio of refunds to total amount",
+        "high_amount": "Binary flag: 1 if max order > $1000",
+    }
+    feature_rows = "\n".join(
+        f"| {fname} | {feature_descriptions.get(fname, 'N/A')} |"
+        for fname in feature_names
     )
-    hp_table = (
-        "| Hyperparameter | Value |\n|---|---|\n" + hp_lines
-        if hp_lines
-        else "_No hyperparameters recorded._"
-    )
 
-    # Format feature list
-    feature_list = "\n".join(f"- `{f}`" for f in features) if features else "- _None recorded_"
+    # Build model card
+    model_card = f"""# EncryptionGuard Model Card
 
-    # --- Assemble the model card -------------------------------------------
-    card = f"""\
-# EncryptionGuard -- Model Card
-
-> Auto-generated on {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
+**Generated**: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}
+**Training Date**: {training_ts}
 
 ---
 
-## 1. Model Details
+## Model Details
 
-| Field | Value |
-|---|---|
-| **Model type** | {model_type} |
-| **Baseline** | {baseline_type} |
-| **XGBoost version** | {xgb_ver} |
-| **Optuna version** | {optuna_ver} |
-| **Created at** | {created_at} |
+| Property | Value |
+|----------|-------|
+| Model Type | {model_type} |
+| Baseline Model | {baseline_type} |
+| Number of Features | {n_features} |
+| Validation PR-AUC | {val_prauc:.4f} |
+| Test PR-AUC | {test_prauc:.4f} |
 
-## 2. Intended Use
+### Description
 
-- **Primary use case**: Detect accounts exhibiting encryption-abuse
-  patterns based on ordering and refund behaviour.
-- **Intended users**: Fraud-operations team; automated scoring service.
-- **Out-of-scope uses**: Not suitable for detecting non-ordering abuse
-  vectors (e.g., credential stuffing, phishing). Should not be used as
-  the sole decision-maker without human review.
+EncryptionGuard uses an XGBoost classifier to detect encryption abuse patterns
+in e-commerce order data. The model identifies accounts exhibiting suspicious
+ordering and refund behaviors that may indicate fraudulent exploitation of
+encryption-related policies.
 
-## 3. Training Data
-
-- **Source**: ``events.json`` -- synthetic / labelled event logs
-  containing per-order records with ``account_id``, ``order_amount``,
-  ``is_refund``, ``event_label``, and ``scenario_id``.
-- **Split strategy**: Chronological (sorted by ``scenario_id``) with a
-  60 / 20 / 20 train / validation / test ratio. No shuffling to
-  preserve temporal ordering.
-- **Class imbalance**: Handled via ``class_weight="balanced"`` (baseline)
-  and ``scale_pos_weight`` (XGBoost).
-
-## 4. Features
-
-{feature_list}
-
-### Feature Engineering Notes
-
-- ``refund_rate`` and ``refund_ratio`` guard against division by zero
-  (NaN filled to 0.0).
-- ``high_amount`` counts orders above the 90th-percentile amount
-  threshold.
-
-## 5. Hyperparameters (XGBoost)
-
-{hp_table}
-
-## 6. Performance
-
-### Validation
-
-| Metric | Value |
-|---|---|
-| **PR-AUC** | {val_pr_auc} |
-
-### Test
-
-| Metric | Value |
-|---|---|
-| **PR-AUC** | {test_pr_auc} |
-
-#### Confusion Matrix (Test)
-
-{cm_text}
-
-#### Classification Report (Test)
-
-{report_table}
-
-## 7. Limitations
-
-1. **Temporal drift**: Model trained on historical scenario ordering;
-   performance may degrade as abuse tactics evolve. Retrain regularly.
-2. **Feature scope**: Only order/refund aggregates are used; behavioural
-   signals (session duration, device fingerprint) are not captured.
-3. **Threshold sensitivity**: Default decision threshold is 0.5; tuning
-   for precision vs. recall trade-off is application-dependent.
-4. **Data quality**: Model assumes ``events.json`` is complete and
-   correctly labelled. Missing or mislabelled events will degrade
-   performance.
-
-## 8. Ethical Considerations
-
-- **False positives**: Legitimate accounts flagged as abusive may
-  experience friction (manual review, temporary holds). Mitigation:
-  human-in-the-loop review for high-confidence false-positive appeals.
-- **Fairness**: The model does not use demographic features, but proxy
-  correlations in ordering patterns could introduce bias. Periodic
-  fairness audits are recommended.
-- **Transparency**: This model card and the evaluation results are
-  versioned alongside the model artefacts for auditability.
-
-## 9. Monitoring & Maintenance
-
-- **Retraining cadence**: Monthly, or sooner if PR-AUC on live data
-  drops below 0.80 of the validation score.
-- **Data drift**: Monitor feature distributions (KS-test) between
-  training data and incoming production data.
-- **Alerting**: Trigger alerts when live PR-AUC falls below the
-  validation baseline or when class-ratio shifts by >20%.
-- **Versioning**: Every model artefact is stored with ``metadata.json``
-  containing training timestamp, hyperparameters, and library versions.
+The model is trained with Optuna hyperparameter optimization to maximize the
+Precision-Recall AUC metric, which is appropriate for the imbalanced nature
+of abuse detection (typically few abuse cases relative to legitimate activity).
 
 ---
 
-*Generated by EncryptionGuard ML Pipeline v5.0.0*
+## Intended Use
+
+### Primary Use Case
+
+- **Real-time abuse detection**: Score incoming order events to flag accounts
+  with suspicious patterns for manual review.
+- **Batch screening**: Periodically scan all accounts to identify potential
+  abuse that may have evaded real-time detection.
+
+### Out-of-Scope Uses
+
+- Automated account termination without human review
+- Credit scoring or financial lending decisions
+- Profiling based on protected characteristics
+- Use outside the e-commerce encryption policy domain
+
+---
+
+## Training Data
+
+| Metric | Value |
+|--------|-------|
+| Test Samples | {test_samples} |
+| Positive (Abuse) Samples | {positive_samples} |
+| Negative (Legitimate) Samples | {negative_samples} |
+| Abuse Rate | {positive_samples / max(test_samples, 1):.2%} |
+
+### Data Source
+
+Training data consists of aggregated order and refund events from the
+EncryptionGuard platform. Events are grouped by account to create per-account
+behavioral features.
+
+### Data Split
+
+Data is split chronologically (sorted by scenario_id as a time proxy):
+- **Training**: 60% (earliest events)
+- **Validation**: 20%
+- **Test**: 20% (latest events)
+
+No shuffling is applied to preserve temporal ordering and prevent data leakage.
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+{feature_rows}
+
+---
+
+## Hyperparameters
+
+The following hyperparameters were selected via Optuna optimization
+(maximizing validation PR-AUC):
+
+| Parameter | Value |
+|-----------|-------|
+{hp_rows}
+
+---
+
+## Performance
+
+### Test Set Results
+
+| Metric | Value |
+|--------|-------|
+| PR-AUC | {test_prauc:.4f} |
+| Accuracy | {accuracy:.4f} |
+
+### Confusion Matrix
+
+|  | Predicted Legitimate | Predicted Abuse |
+|--|---------------------|-----------------|
+| **Actual Legitimate** | {cm[0][0]} (TN) | {cm[0][1]} (FP) |
+| **Actual Abuse** | {cm[1][0]} (FN) | {cm[1][1]} (TP) |
+
+### Per-Class Metrics
+
+| Class | Precision | Recall | F1-Score | Support |
+|-------|-----------|--------|----------|---------|
+| Legitimate (0) | {class_0.get("precision", 0):.4f} | {class_0.get("recall", 0):.4f} | {class_0.get("f1-score", 0):.4f} | {class_0.get("support", 0)} |
+| Abuse (1) | {class_1.get("precision", 0):.4f} | {class_1.get("recall", 0):.4f} | {class_1.get("f1-score", 0):.4f} | {class_1.get("support", 0)} |
+
+### Aggregate Metrics
+
+| Metric | Precision | Recall | F1-Score |
+|--------|-----------|--------|----------|
+| Macro Avg | {macro_avg.get("precision", 0):.4f} | {macro_avg.get("recall", 0):.4f} | {macro_avg.get("f1-score", 0):.4f} |
+| Weighted Avg | {weighted_avg.get("precision", 0):.4f} | {weighted_avg.get("recall", 0):.4f} | {weighted_avg.get("f1-score", 0):.4f} |
+
+---
+
+## Limitations
+
+1. **Temporal drift**: Model performance may degrade as user behavior patterns
+   evolve over time. Regular retraining is recommended.
+
+2. **Feature limitations**: The model relies on aggregated order/refund features
+   only. It does not account for:
+   - User demographics or account age
+   - Product category information
+   - Geographic or IP-based signals
+   - Device fingerprinting
+
+3. **Threshold sensitivity**: The default classification threshold (0.5) may
+   not be optimal for all deployment scenarios. Threshold should be tuned
+   based on the cost of false positives vs. false negatives.
+
+4. **Data quality**: Model predictions are only as good as the input data.
+   Missing or corrupted event data will degrade performance.
+
+5. **Small dataset risk**: If trained on a small dataset, the model may
+   overfit to specific patterns that do not generalize.
+
+---
+
+## Ethical Considerations
+
+### Fairness
+
+- The model should be regularly audited for disparate impact across
+  demographic groups.
+- Feature selection avoids protected characteristics (race, gender, age,
+  religion, etc.).
+- False positive rates should be monitored across account segments to
+  ensure equitable treatment.
+
+### Transparency
+
+- All flagged accounts should receive a human review before any punitive
+  action is taken.
+- Account holders should be informed of the general criteria used for
+  abuse detection.
+- This model card provides full transparency into model design and
+  performance.
+
+### Privacy
+
+- Training data is aggregated at the account level; no individual event
+  details are stored in model artifacts.
+- Model artifacts (pickle files) should be stored securely with
+  appropriate access controls.
+
+### Accountability
+
+- A clear escalation path should exist for disputed flags.
+- Model decisions should be logged for audit purposes.
+- Regular bias audits should be conducted and documented.
+
+---
+
+## Monitoring and Maintenance
+
+### Recommended Monitoring
+
+1. **Performance monitoring**: Track PR-AUC on a rolling basis using
+   labeled data from manual reviews.
+2. **Data drift detection**: Monitor feature distributions for significant
+   shifts from training data.
+3. **Prediction drift**: Track the distribution of predicted probabilities
+   over time.
+4. **Fairness metrics**: Regularly compute false positive rates across
+   account segments.
+
+### Retraining Schedule
+
+- **Recommended**: Retrain monthly or when PR-AUC drops below {test_prauc * 0.9:.4f}
+  (90% of test performance).
+- **Trigger-based**: Retrain immediately if a new abuse pattern is identified
+  that the model fails to detect.
+
+### Version History
+
+| Version | Date | PR-AUC | Notes |
+|---------|------|--------|-------|
+| 1.0 | {training_ts[:10] if training_ts != "Unknown" else "N/A"} | {test_prauc:.4f} | Initial model with XGBoost + Optuna |
+
+---
+
+## Contact
+
+For questions about this model, please contact the EncryptionGuard ML team.
 """
 
+    # Write model card
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    with open(output, "w", encoding="utf-8") as fh:
-        fh.write(card)
+    with open(output, "w") as f:
+        f.write(model_card)
 
-    logger.info("Model card written to %s", output)
-    return card
+    print(f"Model card generated: {output}")
 
 
-# ---------------------------------------------------------------------------
-# CLI entry-point
-# ---------------------------------------------------------------------------
 def main() -> None:
-    """Generate a model card from metadata and evaluation results."""
+    """Generate model card from training and evaluation artifacts."""
     parser = argparse.ArgumentParser(
-        description="EncryptionGuard model card generator"
+        description="EncryptionGuard Model Card Generator"
     )
     parser.add_argument(
-        "--metadata",
+        "--metadata-path",
         type=str,
-        default="artifacts/metadata.json",
-        help="Path to metadata.json (default: artifacts/metadata.json)",
+        default="backend/ml/artifacts/metadata.json",
+        help="Path to metadata.json (default: backend/ml/artifacts/metadata.json)",
     )
     parser.add_argument(
-        "--evaluation",
+        "--eval-path",
         type=str,
-        default="artifacts/evaluation_results.json",
-        help="Path to evaluation_results.json (default: artifacts/evaluation_results.json)",
+        default="backend/ml/artifacts/evaluation_results.json",
+        help="Path to evaluation_results.json (default: backend/ml/artifacts/evaluation_results.json)",
     )
     parser.add_argument(
-        "--output",
+        "--output-path",
         type=str,
-        default="MODEL_CARD.md",
-        help="Output path for MODEL_CARD.md (default: MODEL_CARD.md)",
-    )
-    parser.add_argument(
-        "--log-level",
-        type=str,
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        help="Logging level (default: INFO)",
+        default="backend/ml/artifacts/MODEL_CARD.md",
+        help="Output path for MODEL_CARD.md (default: backend/ml/artifacts/MODEL_CARD.md)",
     )
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+    print("=" * 60)
+    print("EncryptionGuard Model Card Generator")
+    print("=" * 60)
 
     generate_model_card(
-        metadata_path=args.metadata,
-        eval_path=args.evaluation,
-        output_path=args.output,
+        metadata_path=args.metadata_path,
+        eval_path=args.eval_path,
+        output_path=args.output_path,
     )
-    logger.info("Done.")
+
+    print("\nDone!")
 
 
 if __name__ == "__main__":

@@ -1,25 +1,19 @@
 """
-XGBoost Training Pipeline with Optuna Hyperparameter Tuning
-============================================================
+EncryptionGuard ML Training Pipeline
+=====================================
 
-Loads event data from ``events.json``, aggregates per-account features,
-splits chronologically, trains a Logistic Regression baseline and an
-XGBoost model tuned via Optuna, then persists all artefacts.
+XGBoost-based classification pipeline with Optuna hyperparameter tuning
+for detecting encryption abuse patterns in e-commerce order data.
 
-Usage::
-
-    python -m backend.ml.train --data-dir ./data --output-dir ./artifacts
+Usage:
+    python -m backend.ml.train --data-dir data/ --output-dir backend/ml/artifacts/
 """
-
-from __future__ import annotations
 
 import argparse
 import json
-import logging
 import pickle
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import optuna
@@ -28,108 +22,81 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score
 from xgboost import XGBClassifier
 
-logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Feature columns produced by load_data
-# ---------------------------------------------------------------------------
-FEATURE_COLS: List[str] = [
-    "total_orders",
-    "total_refunds",
-    "total_amount",
-    "avg_amount",
-    "max_amount",
-    "refund_rate",
-    "refund_ratio",
-    "high_amount",
-]
+# Suppress Optuna logging for cleaner output
+optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
-# ---------------------------------------------------------------------------
-# Data loading & feature engineering
-# ---------------------------------------------------------------------------
-def load_data(data_dir: str | Path) -> pd.DataFrame:
-    """Load ``events.json`` and aggregate per-account features.
+def load_data(data_dir: str) -> pd.DataFrame:
+    """Load events.json and aggregate features per account.
 
-    Parameters
-    ----------
-    data_dir : str or Path
-        Directory containing ``events.json``.
+    Reads raw event data and computes per-account aggregated features
+    suitable for abuse detection classification.
 
-    Returns
-    -------
-    pd.DataFrame
-        One row per account with engineered features and a binary ``label``
-        column (1 = abuse, 0 = legitimate).
+    Args:
+        data_dir: Path to directory containing events.json.
+
+    Returns:
+        DataFrame with one row per account, containing aggregated features
+        and a binary label (1 = abuse, 0 = legitimate).
+
+    Raises:
+        FileNotFoundError: If events.json does not exist in data_dir.
     """
     data_path = Path(data_dir) / "events.json"
-    logger.info("Loading events from %s", data_path)
+    if not data_path.exists():
+        raise FileNotFoundError(f"Events file not found: {data_path}")
 
-    with open(data_path, "r", encoding="utf-8") as fh:
-        raw: List[Dict[str, Any]] = json.load(fh)
+    with open(data_path, "r") as f:
+        events = json.load(f)
 
-    df = pd.DataFrame(raw)
+    df = pd.DataFrame(events)
 
-    # --- per-account aggregation -------------------------------------------
-    agg = df.groupby("account_id").agg(
+    # Aggregate per account
+    agg_df = df.groupby("account_id").agg(
         total_orders=("order_amount", "count"),
         total_refunds=("is_refund", "sum"),
         total_amount=("order_amount", "sum"),
         avg_amount=("order_amount", "mean"),
         max_amount=("order_amount", "max"),
-        scenario_id=("scenario_id", "first"),  # keep for time-based split
+    ).reset_index()
+
+    # Derived features with safe division
+    agg_df["refund_rate"] = agg_df["total_refunds"] / agg_df["total_orders"]
+    agg_df["refund_ratio"] = np.where(
+        agg_df["total_amount"] > 0,
+        agg_df["total_refunds"] / agg_df["total_amount"],
+        0.0,
     )
+    agg_df["high_amount"] = (agg_df["max_amount"] > 1000).astype(int)
 
-    # Derived features (guard against division by zero)
-    agg["refund_rate"] = agg["total_refunds"] / agg["total_orders"].replace(0, np.nan)
-    agg["refund_rate"] = agg["refund_rate"].fillna(0.0)
+    # Label: 1 if any event for the account has label == "abuse", else 0
+    label_df = df.groupby("account_id")["event_label"].apply(
+        lambda x: int((x == "abuse").any())
+    ).reset_index()
+    label_df.columns = ["account_id", "label"]
 
-    agg["refund_ratio"] = agg["total_refunds"] / agg["total_orders"].replace(0, np.nan)
-    agg["refund_ratio"] = agg["refund_ratio"].fillna(0.0)
+    agg_df = agg_df.merge(label_df, on="account_id", how="left")
+    agg_df["label"] = agg_df["label"].fillna(0).astype(int)
 
-    # Binary flag: order amount exceeds a high-amount threshold (90th pctile)
-    high_threshold = df["order_amount"].quantile(0.9)
-    high_counts = (
-        df[df["order_amount"] >= high_threshold]
-        .groupby("account_id")["order_amount"]
-        .count()
-    )
-    agg["high_amount"] = high_counts.reindex(agg.index, fill_value=0)
-
-    # --- labels ------------------------------------------------------------
-    # Label is 1 when any event for the account has event_label == "abuse"
-    abuse_accounts = set(
-        df[df["event_label"] == "abuse"]["account_id"].unique()
-    )
-    agg["label"] = agg.index.isin(abuse_accounts).astype(int)
-
-    logger.info(
-        "Loaded %d accounts (%d abuse, %d legit)",
-        len(agg),
-        agg["label"].sum(),
-        len(agg) - agg["label"].sum(),
-    )
-    return agg.reset_index()
+    return agg_df
 
 
-# ---------------------------------------------------------------------------
-# Train / validation / test splits (chronological, no shuffle)
-# ---------------------------------------------------------------------------
 def create_splits(
     df: pd.DataFrame,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Split data chronologically by ``scenario_id`` (60/20/20).
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Split data into train, validation, and test sets.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Full dataset including ``scenario_id`` column.
+    Sorts by scenario_id as a time proxy and performs a 60/20/20 sequential
+    split (no shuffle) to respect temporal ordering.
 
-    Returns
-    -------
-    train, val, test : pd.DataFrame
+    Args:
+        df: DataFrame with features and label column.
+
+    Returns:
+        Tuple of (train, val, test) DataFrames.
     """
     df_sorted = df.sort_values("scenario_id").reset_index(drop=True)
+
     n = len(df_sorted)
     train_end = int(n * 0.6)
     val_end = int(n * 0.8)
@@ -138,65 +105,62 @@ def create_splits(
     val = df_sorted.iloc[train_end:val_end]
     test = df_sorted.iloc[val_end:]
 
-    logger.info(
-        "Split sizes -- train: %d, val: %d, test: %d",
-        len(train),
-        len(val),
-        len(test),
-    )
     return train, val, test
 
 
-# ---------------------------------------------------------------------------
-# Baseline model
-# ---------------------------------------------------------------------------
 def train_baseline(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_val: pd.DataFrame,
     y_val: pd.Series,
-) -> Tuple[LogisticRegression, float]:
-    """Train a Logistic Regression baseline and return PR-AUC on validation.
+) -> tuple[LogisticRegression, float]:
+    """Train a logistic regression baseline model.
 
-    Parameters
-    ----------
-    X_train, y_train : training features and labels.
-    X_val, y_val : validation features and labels.
+    Args:
+        X_train: Training features.
+        y_train: Training labels.
+        X_val: Validation features.
+        y_val: Validation labels.
 
-    Returns
-    -------
-    model : LogisticRegression
-    score : float  (PR-AUC on validation set)
+    Returns:
+        Tuple of (trained model, PR-AUC score on validation set).
     """
-    logger.info("Training Logistic Regression baseline ...")
     model = LogisticRegression(
         class_weight="balanced",
         max_iter=1000,
-        solver="lbfgs",
         random_state=42,
     )
     model.fit(X_train, y_train)
-    y_prob = model.predict_proba(X_val)[:, 1]
-    score = average_precision_score(y_val, y_prob)
-    logger.info("Baseline PR-AUC: %.4f", score)
+
+    y_pred_proba = model.predict_proba(X_val)[:, 1]
+    score = average_precision_score(y_val, y_pred_proba)
+
     return model, score
 
 
-# ---------------------------------------------------------------------------
-# Optuna objective for XGBoost
-# ---------------------------------------------------------------------------
 def objective(
-    trial: optuna.trial.Trial,
+    trial: optuna.Trial,
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_val: pd.DataFrame,
     y_val: pd.Series,
 ) -> float:
-    """Optuna objective: train XGBoost with sampled hyperparameters.
+    """Optuna objective function for XGBoost hyperparameter tuning.
 
-    Returns PR-AUC on the validation set (to be maximised).
+    Searches over learning_rate, max_depth, subsample, colsample_bytree,
+    min_child_weight, gamma, and scale_pos_weight.
+
+    Args:
+        trial: Optuna trial object.
+        X_train: Training features.
+        y_train: Training labels.
+        X_val: Validation features.
+        y_val: Validation labels.
+
+    Returns:
+        PR-AUC score on validation set.
     """
-    params: Dict[str, Any] = {
+    params = {
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
@@ -208,7 +172,7 @@ def objective(
 
     model = XGBClassifier(
         **params,
-        n_estimators=300,
+        n_estimators=200,
         use_label_encoder=False,
         eval_metric="aucpr",
         random_state=42,
@@ -220,36 +184,35 @@ def objective(
         eval_set=[(X_val, y_val)],
         verbose=False,
     )
-    y_prob = model.predict_proba(X_val)[:, 1]
-    return float(average_precision_score(y_val, y_prob))
+
+    y_pred_proba = model.predict_proba(X_val)[:, 1]
+    score = average_precision_score(y_val, y_pred_proba)
+
+    return score
 
 
-# ---------------------------------------------------------------------------
-# Full XGBoost training with Optuna
-# ---------------------------------------------------------------------------
 def train_xgboost(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_val: pd.DataFrame,
     y_val: pd.Series,
     n_trials: int = 100,
-) -> Tuple[XGBClassifier, float, Dict[str, Any]]:
-    """Run Optuna study and train final XGBoost model with best params.
+) -> tuple[XGBClassifier, float, dict]:
+    """Train XGBoost model with Optuna hyperparameter optimization.
 
-    Parameters
-    ----------
-    X_train, y_train : training features and labels.
-    X_val, y_val : validation features and labels.
-    n_trials : int
-        Number of Optuna trials.
+    Runs an Optuna study to maximize PR-AUC, then trains a final model
+    using the best hyperparameters found.
 
-    Returns
-    -------
-    model : XGBClassifier
-    score : float  (best PR-AUC on validation)
-    best_params : dict
+    Args:
+        X_train: Training features.
+        y_train: Training labels.
+        X_val: Validation features.
+        y_val: Validation labels.
+        n_trials: Number of Optuna trials to run.
+
+    Returns:
+        Tuple of (trained model, best PR-AUC score, best hyperparameters dict).
     """
-    logger.info("Starting Optuna study (%d trials) ...", n_trials)
     study = optuna.create_study(direction="maximize")
     study.optimize(
         lambda trial: objective(trial, X_train, y_train, X_val, y_val),
@@ -259,76 +222,78 @@ def train_xgboost(
 
     best_params = study.best_params
     best_score = study.best_value
-    logger.info("Best PR-AUC: %.4f  params: %s", best_score, best_params)
 
-    # Train final model with best params on train+val combined
-    X_trainval = pd.concat([X_train, X_val], axis=0)
-    y_trainval = pd.concat([y_train, y_val], axis=0)
-
-    model = XGBClassifier(
+    # Train final model with best params
+    final_model = XGBClassifier(
         **best_params,
-        n_estimators=500,
+        n_estimators=300,
         use_label_encoder=False,
         eval_metric="aucpr",
         random_state=42,
         verbosity=0,
     )
-    model.fit(X_trainval, y_trainval, verbose=False)
+    final_model.fit(
+        X_train,
+        y_train,
+        eval_set=[(X_val, y_val)],
+        verbose=False,
+    )
 
-    return model, best_score, best_params
+    return final_model, best_score, best_params
 
 
-# ---------------------------------------------------------------------------
-# Save artefacts
-# ---------------------------------------------------------------------------
 def save_artifacts(
     model: XGBClassifier,
     baseline: LogisticRegression,
-    feature_names: List[str],
-    best_params: Dict[str, Any],
+    feature_names: list[str],
+    best_params: dict,
     val_score: float,
-    output_dir: str | Path = "artifacts",
+    output_dir: str = "backend/ml/artifacts",
 ) -> None:
-    """Persist trained models and metadata to *output_dir*.
+    """Save trained model artifacts to disk.
 
-    Files written:
-    - ``model.pkl``          -- tuned XGBoost model
-    - ``baseline_model.pkl`` -- Logistic Regression baseline
-    - ``metadata.json``      -- feature names, hyperparameters, score, timestamp
+    Saves the XGBoost model, baseline model, and metadata JSON.
+
+    Args:
+        model: Trained XGBoost model.
+        baseline: Trained baseline logistic regression model.
+        feature_names: List of feature names used in training.
+        best_params: Best hyperparameters from Optuna study.
+        val_score: Validation PR-AUC score.
+        output_dir: Directory to save artifacts.
     """
-    out = Path(output_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
 
-    with open(out / "model.pkl", "wb") as fh:
-        pickle.dump(model, fh)
-    logger.info("Saved model.pkl")
+    # Save XGBoost model
+    with open(output_path / "model.pkl", "wb") as f:
+        pickle.dump(model, f)
 
-    with open(out / "baseline_model.pkl", "wb") as fh:
-        pickle.dump(baseline, fh)
-    logger.info("Saved baseline_model.pkl")
+    # Save baseline model
+    with open(output_path / "baseline_model.pkl", "wb") as f:
+        pickle.dump(baseline, f)
 
+    # Save metadata
     metadata = {
         "model_type": "XGBClassifier",
         "baseline_type": "LogisticRegression",
         "feature_names": feature_names,
         "hyperparameters": best_params,
-        "validation_pr_auc": val_score,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "xgboost_version": __import__("xgboost").__version__,
-        "optuna_version": __import__("optuna").__version__,
+        "validation_prauc": val_score,
+        "training_timestamp": datetime.now(timezone.utc).isoformat(),
+        "n_features": len(feature_names),
     }
-    with open(out / "metadata.json", "w", encoding="utf-8") as fh:
-        json.dump(metadata, fh, indent=2)
-    logger.info("Saved metadata.json")
+
+    with open(output_path / "metadata.json", "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"Artifacts saved to {output_path}/")
 
 
-# ---------------------------------------------------------------------------
-# CLI entry-point
-# ---------------------------------------------------------------------------
 def main() -> None:
     """Run the full training pipeline."""
     parser = argparse.ArgumentParser(
-        description="EncryptionGuard XGBoost training pipeline"
+        description="EncryptionGuard ML Training Pipeline"
     )
     parser.add_argument(
         "--data-dir",
@@ -339,8 +304,8 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="artifacts",
-        help="Directory for model artefacts (default: artifacts)",
+        default="backend/ml/artifacts",
+        help="Directory to save model artifacts (default: backend/ml/artifacts)",
     )
     parser.add_argument(
         "--n-trials",
@@ -348,59 +313,67 @@ def main() -> None:
         default=100,
         help="Number of Optuna trials (default: 100)",
     )
-    parser.add_argument(
-        "--log-level",
-        type=str,
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        help="Logging level (default: INFO)",
-    )
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+    print("=" * 60)
+    print("EncryptionGuard ML Training Pipeline")
+    print("=" * 60)
 
-    # 1. Load & engineer features
+    # Load data
+    print("\n[1/5] Loading data...")
     df = load_data(args.data_dir)
+    print(f"  Loaded {len(df)} accounts")
+    print(f"  Abuse rate: {df['label'].mean():.2%}")
 
-    # 2. Chronological split
+    # Create splits
+    print("\n[2/5] Creating train/val/test splits...")
     train_df, val_df, test_df = create_splits(df)
+    print(f"  Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
 
-    X_train = train_df[FEATURE_COLS]
+    # Define features
+    feature_names = [
+        "total_orders",
+        "total_refunds",
+        "total_amount",
+        "avg_amount",
+        "max_amount",
+        "refund_rate",
+        "refund_ratio",
+        "high_amount",
+    ]
+
+    X_train = train_df[feature_names]
     y_train = train_df["label"]
-    X_val = val_df[FEATURE_COLS]
+    X_val = val_df[feature_names]
     y_val = val_df["label"]
+    X_test = test_df[feature_names]
+    y_test = test_df["label"]
 
-    # 3. Baseline
+    # Train baseline
+    print("\n[3/5] Training baseline (LogisticRegression)...")
     baseline, baseline_score = train_baseline(X_train, y_train, X_val, y_val)
+    print(f"  Baseline PR-AUC: {baseline_score:.4f}")
 
-    # 4. XGBoost + Optuna
-    model, xgb_score, best_params = train_xgboost(
+    # Train XGBoost with Optuna
+    print(f"\n[4/5] Training XGBoost with Optuna ({args.n_trials} trials)...")
+    model, best_score, best_params = train_xgboost(
         X_train, y_train, X_val, y_val, n_trials=args.n_trials
     )
+    print(f"  Best PR-AUC: {best_score:.4f}")
+    print(f"  Best params: {best_params}")
 
-    # 5. Persist
+    # Save artifacts
+    print("\n[5/5] Saving artifacts...")
     save_artifacts(
-        model=model,
-        baseline=baseline,
-        feature_names=FEATURE_COLS,
-        best_params=best_params,
-        val_score=xgb_score,
-        output_dir=args.output_dir,
+        model, baseline, feature_names, best_params, best_score, args.output_dir
     )
 
-    # Also save test split for later evaluation
-    out = Path(args.output_dir)
-    test_df.to_csv(out / "test_split.csv", index=False)
-    logger.info("Saved test_split.csv")
-
-    logger.info(
-        "Pipeline complete -- baseline PR-AUC: %.4f, XGBoost PR-AUC: %.4f",
-        baseline_score,
-        xgb_score,
-    )
+    print("\n" + "=" * 60)
+    print("Training complete!")
+    print(f"  Baseline PR-AUC: {baseline_score:.4f}")
+    print(f"  XGBoost PR-AUC:  {best_score:.4f}")
+    print(f"  Improvement:     {best_score - baseline_score:+.4f}")
+    print("=" * 60)
 
 
 if __name__ == "__main__":

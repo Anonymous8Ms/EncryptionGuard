@@ -1,30 +1,22 @@
 """
-Model Evaluation
-================
+EncryptionGuard ML Model Evaluation
+====================================
 
-Loads a trained model and evaluates it on a held-out test set, producing
-PR-AUC, confusion matrix, classification report, and a precision-recall
-curve plot.
+Evaluate trained XGBoost model on test data with PR-AUC, confusion matrix,
+classification report, and precision-recall curve visualization.
 
-Usage::
-
-    python -m backend.ml.evaluate \\
-        --model-path ./artifacts/model.pkl \\
-        --data-dir ./data \\
-        --output-dir ./artifacts
+Usage:
+    python -m backend.ml.evaluate --model-path backend/ml/artifacts/model.pkl \
+        --data-dir data/ --output-dir backend/ml/artifacts/
 """
-
-from __future__ import annotations
 
 import argparse
 import json
-import logging
 import pickle
 from pathlib import Path
-from typing import Any, Dict
 
 import matplotlib
-matplotlib.use("Agg")  # non-interactive backend for headless environments
+matplotlib.use("Agg")  # Non-interactive backend for server environments
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -35,131 +27,114 @@ from sklearn.metrics import (
     precision_recall_curve,
 )
 
-logger = logging.getLogger(__name__)
-
-# Must match the feature columns used during training
-FEATURE_COLS = [
-    "total_orders",
-    "total_refunds",
-    "total_amount",
-    "avg_amount",
-    "max_amount",
-    "refund_rate",
-    "refund_ratio",
-    "high_amount",
-]
+from backend.ml.train import create_splits, load_data
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def load_model(path: str | Path) -> Any:
-    """Load a pickled model from *path*.
+def load_model(path: str) -> object:
+    """Load a trained model from a pickle file.
 
-    Parameters
-    ----------
-    path : str or Path
-        Path to a ``.pkl`` file.
+    Args:
+        path: Path to the model pickle file.
 
-    Returns
-    -------
-    model
-        The deserialised scikit-learn / XGBoost model.
+    Returns:
+        Loaded model object.
+
+    Raises:
+        FileNotFoundError: If the model file does not exist.
     """
-    path = Path(path)
-    logger.info("Loading model from %s", path)
-    with open(path, "rb") as fh:
-        model = pickle.load(fh)
+    model_path = Path(path)
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+
     return model
 
 
 def evaluate(
-    model: Any,
+    model: object,
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    output_dir: str | Path = "artifacts",
-) -> Dict[str, Any]:
-    """Evaluate *model* on the test set and persist results.
+    output_dir: str = "backend/ml/artifacts",
+) -> dict:
+    """Evaluate model on test data and save results.
 
-    Parameters
-    ----------
-    model : trained classifier
-    X_test : pd.DataFrame
-    y_test : pd.Series
-    output_dir : str or Path
-        Directory where ``evaluation_results.json`` and the PR-curve plot
-        will be saved.
+    Computes PR-AUC, confusion matrix, classification report, generates
+    and saves a precision-recall curve plot, and writes evaluation_results.json.
 
-    Returns
-    -------
-    results : dict
-        Keys: ``pr_auc``, ``confusion_matrix``, ``classification_report``,
-        ``precision_recall_curve`` (path to saved plot).
+    Args:
+        model: Trained model with predict_proba method.
+        X_test: Test features.
+        y_test: Test labels.
+        output_dir: Directory to save evaluation artifacts.
+
+    Returns:
+        Dictionary containing evaluation metrics and reports.
     """
-    out = Path(output_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
 
-    y_prob = model.predict_proba(X_test)[:, 1]
-    y_pred = (y_prob >= 0.5).astype(int)
+    # Predictions
+    y_pred_proba = model.predict_proba(X_test)[:, 1]
+    y_pred = (y_pred_proba >= 0.5).astype(int)
 
     # Metrics
-    pr_auc = float(average_precision_score(y_test, y_prob))
-    cm = confusion_matrix(y_test, y_pred).tolist()
+    pr_auc = average_precision_score(y_test, y_pred_proba)
+    cm = confusion_matrix(y_test, y_pred)
     report = classification_report(y_test, y_pred, output_dict=True)
+    report_text = classification_report(y_test, y_pred)
 
-    logger.info("Test PR-AUC: %.4f", pr_auc)
-    logger.info("Confusion matrix:\n%s", confusion_matrix(y_test, y_pred))
-    logger.info(
-        "Classification report:\n%s",
-        classification_report(y_test, y_pred),
-    )
+    # Precision-Recall curve
+    precision, recall, thresholds = precision_recall_curve(y_test, y_pred_proba)
 
-    # --- Precision-Recall curve plot ---------------------------------------
-    precision, recall, _ = precision_recall_curve(y_test, y_prob)
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.plot(recall, precision, color="steelblue", lw=2,
-            label=f"XGBoost (PR-AUC = {pr_auc:.4f})")
-    ax.set_xlabel("Recall")
-    ax.set_ylabel("Precision")
-    ax.set_title("Precision-Recall Curve")
-    ax.legend(loc="best")
+    ax.plot(recall, precision, color="blue", lw=2, label=f"PR-AUC = {pr_auc:.4f}")
+    ax.set_xlabel("Recall", fontsize=12)
+    ax.set_ylabel("Precision", fontsize=12)
+    ax.set_title("Precision-Recall Curve", fontsize=14)
+    ax.legend(loc="best", fontsize=11)
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
     ax.grid(True, alpha=0.3)
-    fig.tight_layout()
 
-    pr_curve_path = out / "pr_curve.png"
-    fig.savefig(pr_curve_path, dpi=150)
+    pr_curve_path = output_path / "pr_curve.png"
+    fig.savefig(pr_curve_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    logger.info("Saved PR curve to %s", pr_curve_path)
 
-    # --- Persist results ---------------------------------------------------
-    results: Dict[str, Any] = {
-        "pr_auc": pr_auc,
-        "confusion_matrix": cm,
+    # Compile results
+    results = {
+        "pr_auc": float(pr_auc),
+        "confusion_matrix": cm.tolist(),
         "classification_report": report,
+        "classification_report_text": report_text,
+        "test_samples": int(len(y_test)),
+        "positive_samples": int(y_test.sum()),
+        "negative_samples": int(len(y_test) - y_test.sum()),
         "pr_curve_path": str(pr_curve_path),
     }
 
-    results_path = out / "evaluation_results.json"
-    with open(results_path, "w", encoding="utf-8") as fh:
-        json.dump(results, fh, indent=2, default=str)
-    logger.info("Saved evaluation_results.json to %s", results_path)
+    # Save results
+    results_path = output_path / "evaluation_results.json"
+    with open(results_path, "w") as f:
+        json.dump(results, f, indent=2)
+
+    print(f"Evaluation results saved to {results_path}")
+    print(f"PR curve saved to {pr_curve_path}")
 
     return results
 
 
-# ---------------------------------------------------------------------------
-# CLI entry-point
-# ---------------------------------------------------------------------------
 def main() -> None:
-    """Run model evaluation on the test set."""
+    """Run model evaluation on test data."""
     parser = argparse.ArgumentParser(
-        description="EncryptionGuard model evaluation"
+        description="EncryptionGuard ML Model Evaluation"
     )
     parser.add_argument(
         "--model-path",
         type=str,
-        default="artifacts/model.pkl",
-        help="Path to trained model .pkl (default: artifacts/model.pkl)",
+        default="backend/ml/artifacts/model.pkl",
+        help="Path to trained model pickle file (default: backend/ml/artifacts/model.pkl)",
     )
     parser.add_argument(
         "--data-dir",
@@ -170,45 +145,56 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="artifacts",
-        help="Directory for evaluation outputs (default: artifacts)",
-    )
-    parser.add_argument(
-        "--log-level",
-        type=str,
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        help="Logging level (default: INFO)",
+        default="backend/ml/artifacts",
+        help="Directory to save evaluation artifacts (default: backend/ml/artifacts)",
     )
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+    print("=" * 60)
+    print("EncryptionGuard ML Model Evaluation")
+    print("=" * 60)
 
     # Load model
+    print("\n[1/3] Loading model...")
     model = load_model(args.model_path)
+    print(f"  Model type: {type(model).__name__}")
 
-    # Load test split (saved by train.py) or rebuild from events.json
-    test_csv = Path(args.output_dir) / "test_split.csv"
-    if test_csv.exists():
-        logger.info("Loading pre-saved test split from %s", test_csv)
-        test_df = pd.read_csv(test_csv)
-    else:
-        logger.info("No test_split.csv found; rebuilding splits from events.json")
-        from backend.ml.train import create_splits, load_data
+    # Load and split data
+    print("\n[2/3] Loading test data...")
+    df = load_data(args.data_dir)
+    _, _, test_df = create_splits(df)
 
-        df = load_data(args.data_dir)
-        _, _, test_df = create_splits(df)
+    feature_names = [
+        "total_orders",
+        "total_refunds",
+        "total_amount",
+        "avg_amount",
+        "max_amount",
+        "refund_rate",
+        "refund_ratio",
+        "high_amount",
+    ]
 
-    X_test = test_df[FEATURE_COLS]
+    X_test = test_df[feature_names]
     y_test = test_df["label"]
+    print(f"  Test samples: {len(X_test)}")
+    print(f"  Abuse rate: {y_test.mean():.2%}")
 
     # Evaluate
-    results = evaluate(model, X_test, y_test, output_dir=args.output_dir)
+    print("\n[3/3] Evaluating model...")
+    results = evaluate(model, X_test, y_test, args.output_dir)
 
-    logger.info("Evaluation complete -- PR-AUC: %.4f", results["pr_auc"])
+    print("\n" + "=" * 60)
+    print("Evaluation Results")
+    print("=" * 60)
+    print(f"  PR-AUC: {results['pr_auc']:.4f}")
+    print(f"\nConfusion Matrix:")
+    cm = np.array(results["confusion_matrix"])
+    print(f"  TN={cm[0,0]}  FP={cm[0,1]}")
+    print(f"  FN={cm[1,0]}  TP={cm[1,1]}")
+    print(f"\nClassification Report:")
+    print(results["classification_report_text"])
+    print("=" * 60)
 
 
 if __name__ == "__main__":
