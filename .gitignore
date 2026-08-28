@@ -42,3 +42,4 @@ Thumbs.db
 *.joblib
 mlruns/
 mlartifacts/
+*.db

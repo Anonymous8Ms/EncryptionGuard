@@ -1,0 +1,24 @@
+{
+  "generator_version": "5.0.0",
+  "seed": 42,
+  "num_scenarios": 15,
+  "generated_at": "2026-08-28T05:27:17.972271+00:00",
+  "files": [
+    "all_scenarios.json",
+    "normal_000.json",
+    "legitimate_refund_001.json",
+    "shared_network_002.json",
+    "single_abuse_003.json",
+    "coordinated_ring_004.json",
+    "normal_005.json",
+    "legitimate_refund_006.json",
+    "shared_network_007.json",
+    "single_abuse_008.json",
+    "coordinated_ring_009.json",
+    "normal_010.json",
+    "legitimate_refund_011.json",
+    "shared_network_012.json",
+    "single_abuse_013.json",
+    "coordinated_ring_014.json"
+  ]
+}
