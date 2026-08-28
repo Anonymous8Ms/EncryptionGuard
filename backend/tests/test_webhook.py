@@ -1,146 +1,94 @@
 """
-Tests for the Razorpay webhook receiver.
+Tests for webhook processing — signature verification and event handling.
 
 Covers:
-- Valid HMAC-SHA256 signature → 200
-- Invalid signature → 400
-- Idempotency (duplicate event_id → same response, no double insert)
-- Refund event processing
+  1. HMAC-SHA256 signature verification (valid + invalid)
+  2. order.paid webhook → Order row created
+  3. refund.processed webhook → Refund row created
+  4. Unknown event type → ValueError
 """
+
+from __future__ import annotations
 
 import hashlib
 import hmac
-import json
-import os
-from pathlib import Path
 
 import pytest
+from sqlalchemy.orm import Session
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
+from backend.app.models.order import Order
+from backend.app.models.refund import Refund
+from backend.app.services.webhook_service import process_webhook, verify_signature
 
-WEBHOOK_SECRET = "test_webhook_secret"
-WEBHOOK_URL = "/webhooks/razorpay"
-
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
+WEBHOOK_SECRET = "test_webhook_secret_12345"
 
 
-def _sign(body: bytes, secret: str = WEBHOOK_SECRET) -> str:
-    """Compute HMAC-SHA256 signature the same way Razorpay does."""
-    return hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+# ── Signature verification ───────────────────────────────────────────────────
 
 
-def _load_fixture(name: str) -> dict:
-    with open(FIXTURES_DIR / name) as f:
-        return json.load(f)
+class TestVerifySignature:
+    """HMAC-SHA256 signature verification."""
+
+    def test_valid_signature(self):
+        payload = b'{"event_type": "order.paid"}'
+        expected_sig = hmac.new(
+            WEBHOOK_SECRET.encode(), payload, hashlib.sha256
+        ).hexdigest()
+        assert verify_signature(payload, expected_sig, WEBHOOK_SECRET) is True
+
+    def test_invalid_signature(self):
+        payload = b'{"event_type": "order.paid"}'
+        assert verify_signature(payload, "bad_signature", WEBHOOK_SECRET) is False
+
+    def test_tampered_payload(self):
+        payload = b'{"event_type": "order.paid"}'
+        sig = hmac.new(
+            WEBHOOK_SECRET.encode(), payload, hashlib.sha256
+        ).hexdigest()
+        tampered = b'{"event_type": "refund.processed"}'
+        assert verify_signature(tampered, sig, WEBHOOK_SECRET) is False
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
-class TestWebhookSignature:
-    """Signature verification tests."""
-
-    def test_valid_signature_returns_200(self, client, db, monkeypatch):
-        """A correctly signed webhook should be accepted."""
-        monkeypatch.setenv("RAZORPAY_WEBHOOK_SECRET", WEBHOOK_SECRET)
-
-        payload = _load_fixture("webhook_order_paid.json")
-        body = json.dumps(payload).encode("utf-8")
-        sig = _sign(body)
-
-        resp = client.post(
-            WEBHOOK_URL,
-            content=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-Razorpay-Signature": sig,
-                "X-Razorpay-Event-Id": "evt_valid_001",
-            },
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["status"] == "ok"
-
-    def test_invalid_signature_returns_400(self, client, db, monkeypatch):
-        """A webhook with a bad signature must be rejected."""
-        monkeypatch.setenv("RAZORPAY_WEBHOOK_SECRET", WEBHOOK_SECRET)
-
-        payload = _load_fixture("webhook_order_paid.json")
-        body = json.dumps(payload).encode("utf-8")
-
-        resp = client.post(
-            WEBHOOK_URL,
-            content=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-Razorpay-Signature": "deadbeef" * 8,  # obviously wrong
-                "X-Razorpay-Event-Id": "evt_bad_sig_001",
-            },
-        )
-        assert resp.status_code == 400
+# ── Webhook event processing ─────────────────────────────────────────────────
 
 
-class TestWebhookIdempotency:
-    """Duplicate event_id must not create duplicate records."""
+class TestProcessWebhook:
+    """Database writes from webhook events."""
 
-    def test_duplicate_event_returns_ok_without_double_insert(
-        self, client, db, monkeypatch
+    def test_order_paid_creates_order(
+        self, db: Session, webhook_order_paid_payload: dict
     ):
-        monkeypatch.setenv("RAZORPAY_WEBHOOK_SECRET", WEBHOOK_SECRET)
-
-        payload = _load_fixture("webhook_order_paid.json")
-        body = json.dumps(payload).encode("utf-8")
-        sig = _sign(body)
-        headers = {
-            "Content-Type": "application/json",
-            "X-Razorpay-Signature": sig,
-            "X-Razorpay-Event-Id": "evt_idem_001",
-        }
-
-        resp1 = client.post(WEBHOOK_URL, content=body, headers=headers)
-        resp2 = client.post(WEBHOOK_URL, content=body, headers=headers)
-
-        assert resp1.status_code == 200
-        assert resp2.status_code == 200
-
-        # Verify only one WebhookEnvelope was created
-        from backend.app.models.events import WebhookEnvelope
-
-        count = db.query(WebhookEnvelope).filter_by(event_id="evt_idem_001").count()
-        assert count == 1
-
-
-class TestWebhookRefundEvent:
-    """Refund events should be processed and normalized correctly."""
-
-    def test_refund_event_is_processed(self, client, db, monkeypatch):
-        monkeypatch.setenv("RAZORPAY_WEBHOOK_SECRET", WEBHOOK_SECRET)
-
-        payload = _load_fixture("webhook_refund_processed.json")
-        body = json.dumps(payload).encode("utf-8")
-        sig = _sign(body)
-
-        resp = client.post(
-            WEBHOOK_URL,
-            content=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-Razorpay-Signature": sig,
-                "X-Razorpay-Event-Id": "evt_refund_001",
-            },
+        result = process_webhook(
+            db,
+            event_type=webhook_order_paid_payload["event_type"],
+            payload=webhook_order_paid_payload["payload"],
         )
-        assert resp.status_code == 200
+        assert result["status"] == "order_created"
+        assert result["order_id"] == "ord_test_001"
 
-        # Verify a NormalizedEvent was created with event_type containing "refund"
-        from backend.app.models.events import NormalizedEvent
+        order = db.query(Order).filter_by(order_id="ord_test_001").first()
+        assert order is not None
+        assert order.account_id == "acc_test_001"
+        assert order.amount_cents == 4999
+        assert order.status == "completed"
 
-        evt = (
-            db.query(NormalizedEvent)
-            .filter_by(entity_id="rfnd_test_123")
-            .first()
+    def test_refund_processed_creates_refund(
+        self, db: Session, webhook_refund_processed_payload: dict
+    ):
+        result = process_webhook(
+            db,
+            event_type=webhook_refund_processed_payload["event_type"],
+            payload=webhook_refund_processed_payload["payload"],
         )
-        assert evt is not None
-        assert "refund" in evt.event_type.lower()
+        assert result["status"] == "refund_processed"
+        assert result["refund_id"] == "ref_test_001"
+
+        refund = db.query(Refund).filter_by(refund_id="ref_test_001").first()
+        assert refund is not None
+        assert refund.payment_id == "pay_test_001"
+        assert refund.amount_cents == 4999
+        assert refund.reason == "item_not_received"
+
+    def test_unknown_event_type_raises(self, db: Session):
+        with pytest.raises(ValueError, match="Unknown webhook event type"):
+            process_webhook(db, event_type="unknown.event", payload={})

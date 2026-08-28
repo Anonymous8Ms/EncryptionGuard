@@ -1,1 +1,10 @@
-{"event": "order.paid", "payload": {"payment": {"entity": {"id": "pay_test_123", "order_id": "order_test_456", "amount": 15000, "currency": "INR", "status": "captured", "method": "card", "notes": {"merchant_id": "mrc_test_789"}}}}}
+{
+  "event_type": "order.paid",
+  "payload": {
+    "order_id": "ord_test_001",
+    "account_id": "acc_test_001",
+    "merchant_id": "mch_test_001",
+    "amount_cents": 4999,
+    "currency": "USD"
+  }
+}

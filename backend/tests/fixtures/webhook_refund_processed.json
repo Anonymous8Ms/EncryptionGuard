@@ -1,1 +1,10 @@
-{"event": "refund.processed", "payload": {"refund": {"entity": {"id": "rfnd_test_123", "payment_id": "pay_test_456", "amount": 15000, "status": "processed", "reason": "duplicate"}}}}
+{
+  "event_type": "refund.processed",
+  "payload": {
+    "refund_id": "ref_test_001",
+    "payment_id": "pay_test_001",
+    "order_id": "ord_test_001",
+    "amount_cents": 4999,
+    "reason": "item_not_received"
+  }
+}
