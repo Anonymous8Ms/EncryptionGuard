@@ -1,4 +1,4 @@
-# EncryptionGuard v5 (Cloud-Light)
+# EncryptionGuard v5
 
 Explainable AI for detecting coordinated refund abuse on Razorpay.
 
