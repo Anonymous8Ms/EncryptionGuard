@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ShieldCheck, ThumbsUp, HelpCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { submitFeedback } from '../services/api';
 
@@ -30,58 +29,80 @@ export default function FeedbackButtons({ caseId, onFeedbackSubmitted }: Feedbac
 
   if (submitted) {
     return (
-      <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-        <ShieldCheck className="h-5 w-5 text-green-600" />
-        <span className="text-green-700 text-sm font-medium">
-          Feedback submitted: {submitted.replace(/_/g, ' ')}
-        </span>
+      <div className="border border-border bg-cream p-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-8 h-8 bg-cobalt" />
+          <div>
+            <p className="text-xl font-bold text-jet">Decision Recorded</p>
+            <p className="mono-label">{submitted.replace(/_/g, ' ').toUpperCase()}</p>
+          </div>
+        </div>
+        <p className="text-deep">
+          Your analysis has been recorded and will be used to improve model accuracy.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-700 mb-2">Analyst Feedback</p>
-      <div className="flex flex-wrap gap-2">
+    <div>
+      <div className="grid grid-cols-3 gap-px bg-border border border-border">
+        {/* Confirm Abuse */}
         <button
           onClick={() => handleFeedback('confirm_abuse')}
           disabled={submitting !== null}
           className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300',
+            'bg-cream p-8 text-left transition-colors',
+            'hover:bg-jet hover:text-cream group',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          <ShieldCheck className="h-4 w-4" />
-          {submitting === 'confirm_abuse' ? 'Submitting...' : 'Confirm Abuse'}
+          <p className="mono-label mb-4 group-hover:text-cream/60">01</p>
+          <p className="text-2xl font-bold mb-3">Confirm Abuse</p>
+          <p className="text-sm text-deep group-hover:text-cream/80">
+            Mark as coordinated refund abuse ring
+          </p>
         </button>
+
+        {/* Legitimate */}
         <button
           onClick={() => handleFeedback('legitimate')}
           disabled={submitting !== null}
           className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300',
+            'bg-cream p-8 text-left transition-colors',
+            'hover:bg-cobalt hover:text-cream group',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          <ThumbsUp className="h-4 w-4" />
-          {submitting === 'legitimate' ? 'Submitting...' : 'Legitimate'}
+          <p className="mono-label mb-4 group-hover:text-cream/60">02</p>
+          <p className="text-2xl font-bold mb-3">Legitimate</p>
+          <p className="text-sm text-deep group-hover:text-cream/80">
+            False positive — legitimate activity
+          </p>
         </button>
+
+        {/* Escalate */}
         <button
           onClick={() => handleFeedback('need_more_evidence')}
           disabled={submitting !== null}
           className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-300',
+            'bg-cream p-8 text-left transition-colors',
+            'hover:bg-deep hover:text-cream group',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
-          <HelpCircle className="h-4 w-4" />
-          {submitting === 'need_more_evidence' ? 'Submitting...' : 'Need More Evidence'}
+          <p className="mono-label mb-4 group-hover:text-cream/60">03</p>
+          <p className="text-2xl font-bold mb-3">Escalate</p>
+          <p className="text-sm text-deep group-hover:text-cream/80">
+            Require additional investigation
+          </p>
         </button>
       </div>
+
       {error && (
-        <p className="text-sm text-red-600 mt-1">{error}</p>
+        <div className="mt-px border border-border bg-red-50 px-6 py-4">
+          <p className="mono-label text-red-600">{error}</p>
+        </div>
       )}
     </div>
   );

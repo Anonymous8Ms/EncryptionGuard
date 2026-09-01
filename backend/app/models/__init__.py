@@ -8,6 +8,8 @@ from .base import Base, SessionLocal, TestingSessionLocal, engine, get_db
 from .order import Order
 from .payment import Payment
 from .refund import Refund
+from .cases import Case, Feedback
+from .events import WebhookEnvelope, NormalizedEvent
 
 __all__ = [
     "Base",
@@ -18,4 +20,8 @@ __all__ = [
     "Order",
     "Payment",
     "Refund",
+    "Case",
+    "Feedback",
+    "WebhookEnvelope",
+    "NormalizedEvent",
 ]

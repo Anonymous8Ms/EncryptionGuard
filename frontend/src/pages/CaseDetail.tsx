@@ -4,12 +4,13 @@ import { fetchCase } from '../services/api';
 import type { CaseDetail as CaseDetailType } from '../services/api';
 import GraphView from '../components/GraphView';
 import FeedbackButtons from '../components/FeedbackButtons';
+import clsx from 'clsx';
 
-const riskLevelBadgeColors: Record<string, string> = {
-  critical: 'bg-red-500 text-white',
-  high: 'bg-orange-500 text-white',
-  medium: 'bg-yellow-500 text-white',
-  low: 'bg-green-500 text-white',
+const riskLevelConfig: Record<string, { label: string; color: string }> = {
+  critical: { label: 'CRITICAL', color: 'text-cobalt' },
+  high: { label: 'HIGH', color: 'text-jet' },
+  medium: { label: 'MEDIUM', color: 'text-deep' },
+  low: { label: 'LOW', color: 'text-muted' },
 };
 
 export default function CaseDetail() {
@@ -41,10 +42,10 @@ export default function CaseDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
-          <p className="mt-2 text-gray-500">Loading case details...</p>
+          <div className="inline-block w-6 h-6 border-2 border-jet/20 border-t-jet animate-spin" />
+          <p className="mono-label mt-4">Loading case data...</p>
         </div>
       </div>
     );
@@ -52,21 +53,24 @@ export default function CaseDetail() {
 
   if (error || !caseData) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error || 'Case not found'}</p>
+          <div className="w-16 h-16 border border-border mx-auto mb-6 flex items-center justify-center">
+            <div className="w-4 h-4 bg-cobalt" />
+          </div>
+          <p className="text-2xl font-bold text-jet mb-2">Case Not Found</p>
+          <p className="mono-label mb-8">{error || 'The requested case does not exist.'}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600"
+            className="btn-primary"
           >
-            Back to Dashboard
+            Return to Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  // Convert shap_values Record<string, number> to sorted array for the bar chart
   const sortedShapValues = Object.entries(caseData.shap_values)
     .map(([feature, value]) => ({ feature, value }))
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
@@ -76,95 +80,202 @@ export default function CaseDetail() {
     0.01
   );
 
+  const riskConfig = riskLevelConfig[caseData.risk_level] || riskLevelConfig.low;
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-cream">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-border h-20">
+        <div className="grid-12 h-full max-w-[1440px] mx-auto px-8">
+          <div className="col-span-3 flex items-center">
             <button
               onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-3 group"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <div className="w-8 h-8 border border-jet flex items-center justify-center group-hover:bg-jet group-hover:text-cream transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <span className="label">Back to Dashboard</span>
             </button>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900 font-mono">{caseData.id}</h1>
-              <span className={`px-3 py-1 rounded-full text-sm font-bold ${riskLevelBadgeColors[caseData.risk_level]}`}>
-                {caseData.risk_level.toUpperCase()}
-              </span>
+          </div>
+
+          <div className="col-span-6 flex items-center justify-center">
+            <span className="mono-label">Case Analysis — {caseData.id}</span>
+          </div>
+
+          <div className="col-span-3 flex items-center justify-end">
+            <div className="status-indicator">
+              <div className="status-dot active" />
+              <span className="mono-label">{caseData.status.toUpperCase()}</span>
             </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-        {/* Risk Assessment Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Risk Assessment</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-gray-500">Risk Score</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {(caseData.risk_score * 100).toFixed(1)}%
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Recommended Action</p>
-              <p className="text-lg font-medium text-gray-900">{caseData.recommended_action}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Model Version</p>
-              <p className="text-lg font-medium text-gray-900">{caseData.model_version}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* LLM Summary Card (if available) */}
-        {caseData.llm_summary && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">LLM Analysis Summary</h2>
-            <p className="text-gray-700 whitespace-pre-wrap">{caseData.llm_summary}</p>
-          </div>
-        )}
-
-        {/* Graph View */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction Graph</h2>
-          <GraphView graphData={caseData.graph_evidence} />
-        </div>
-
-        {/* SHAP Values Bar Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">SHAP Feature Importance</h2>
-          <div className="space-y-3">
-            {sortedShapValues.map((shap) => (
-              <div key={shap.feature} className="flex items-center gap-4">
-                <div className="w-40 text-sm text-gray-700 text-right truncate" title={shap.feature}>
-                  {shap.feature}
+      {/* Hero */}
+      <section className="pt-20 border-b border-border">
+        <div className="grid-12 max-w-[1440px] mx-auto min-h-[60vh]">
+          {/* Sidebar */}
+          <div className="col-span-3 border-r border-border px-8 py-16">
+            <div className="sticky top-32">
+              <p className="label mb-6">Case Details</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="mono-label">Merchant</p>
+                  <p className="text-lg font-bold text-jet mt-1">{caseData.merchant_id}</p>
                 </div>
-                <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${shap.value >= 0 ? 'bg-indigo-500' : 'bg-red-400'}`}
-                    style={{ width: `${(Math.abs(shap.value) / maxShapValue) * 100}%` }}
-                  />
+                <div>
+                  <p className="mono-label">Account</p>
+                  <p className="text-lg font-bold text-jet mt-1">{caseData.account_id}</p>
                 </div>
-                <div className="w-16 text-sm font-mono text-gray-600">
-                  {shap.value.toFixed(4)}
+                <div>
+                  <p className="mono-label">Model Version</p>
+                  <p className="text-lg font-bold text-jet mt-1">{caseData.model_version}</p>
                 </div>
               </div>
-            ))}
+            </div>
+          </div>
+
+          {/* Main */}
+          <div className="col-span-9 px-16 py-16 flex flex-col justify-between">
+            <div>
+              <p className="label mb-6">Coordinated Abuse Detection</p>
+              <h1 className="text-9xl font-black leading-compressed tracking-tight text-jet">
+                CASE
+                <br />
+                <span className={riskConfig.color}>{riskConfig.label}</span>
+              </h1>
+            </div>
+
+            <div className="mt-16">
+              <p className="label mb-4">Risk Score</p>
+              <div className="flex items-end gap-4">
+                <p className={clsx(
+                  'text-[10rem] font-black leading-none tracking-tight',
+                  caseData.risk_score > 0.7 ? 'text-cobalt' : 
+                  caseData.risk_score > 0.4 ? 'text-jet' : 'text-muted'
+                )}>
+                  {(caseData.risk_score * 100).toFixed(0)}
+                </p>
+                <p className="text-4xl font-bold text-muted mb-8">%</p>
+              </div>
+              <p className="mono-label mt-4">
+                RECOMMENDED: {caseData.recommended_action.replace(/_/g, ' ').toUpperCase()}
+              </p>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Feedback Buttons */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <FeedbackButtons caseId={caseData.id} />
+      {/* AI Analysis */}
+      {caseData.llm_summary && (
+        <section className="border-b border-border">
+          <div className="grid-12 max-w-[1440px] mx-auto">
+            <div className="col-span-3 border-r border-border px-8 py-16">
+              <div className="sticky top-32">
+                <p className="label">AI Analysis</p>
+                <p className="mono-label mt-4">MiMo v2.5-pro</p>
+              </div>
+            </div>
+            <div className="col-span-9 px-16 py-16">
+              <p className="text-xl text-deep leading-relaxed">
+                {caseData.llm_summary}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Network Graph */}
+      <section className="border-b border-border">
+        <div className="grid-12 max-w-[1440px] mx-auto">
+          <div className="col-span-3 border-r border-border px-8 py-16">
+            <div className="sticky top-32">
+              <p className="label">Network Graph</p>
+              <p className="mono-label mt-4">Neo4j Visualization</p>
+            </div>
+          </div>
+          <div className="col-span-9 px-16 py-16">
+            <GraphView graphData={caseData.graph_evidence} />
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* SHAP Values */}
+      <section className="border-b border-border">
+        <div className="grid-12 max-w-[1440px] mx-auto">
+          <div className="col-span-3 border-r border-border px-8 py-16">
+            <div className="sticky top-32">
+              <p className="label">Feature Impact</p>
+              <p className="mono-label mt-4">SHAP Attribution</p>
+            </div>
+          </div>
+          <div className="col-span-9 px-16 py-16">
+            <div className="space-y-1">
+              {sortedShapValues.slice(0, 8).map((shap, index) => (
+                <div key={shap.feature} className="list-item">
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-1">
+                      <p className="mono-label">{String(index + 1).padStart(2, '0')}</p>
+                    </div>
+                    <div className="col-span-4">
+                      <p className="text-lg font-bold text-jet">{shap.feature}</p>
+                    </div>
+                    <div className="col-span-5">
+                      <div className="h-2 bg-border overflow-hidden">
+                        <div
+                          className={clsx(
+                            'h-full',
+                            shap.value >= 0 ? 'bg-cobalt' : 'bg-jet'
+                          )}
+                          style={{ width: `${(Math.abs(shap.value) / maxShapValue) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <p className="mono-label">{shap.value.toFixed(4)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feedback */}
+      <section className="border-b border-border">
+        <div className="grid-12 max-w-[1440px] mx-auto">
+          <div className="col-span-3 border-r border-border px-8 py-16">
+            <div className="sticky top-32">
+              <p className="label">Analyst Decision</p>
+              <p className="mono-label mt-4">Manual Review</p>
+            </div>
+          </div>
+          <div className="col-span-9 px-16 py-16">
+            <FeedbackButtons caseId={caseData.id} />
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-jet text-cream">
+        <div className="grid-12 max-w-[1440px] mx-auto px-8 py-12">
+          <div className="col-span-3">
+            <p className="text-lg font-bold tracking-tight uppercase">EncryptionGuard</p>
+          </div>
+          <div className="col-span-6 flex items-center justify-center">
+            <p className="mono-label text-cream/40">v5.0 — Coordinated Abuse Detection</p>
+          </div>
+          <div className="col-span-3 flex items-center justify-end">
+            <button onClick={() => navigate('/')} className="mono-label text-cream/60 hover:text-cream transition-colors">
+              ← Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -58,6 +58,7 @@ def load_data(data_dir: str) -> pd.DataFrame:
         total_amount=("order_amount", "sum"),
         avg_amount=("order_amount", "mean"),
         max_amount=("order_amount", "max"),
+        scenario_id=("scenario_id", "first"),
     ).reset_index()
 
     # Derived features with safe division

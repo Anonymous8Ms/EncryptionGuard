@@ -1,20 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 import type { Case } from '../services/api';
 
-const riskLevelColors: Record<string, string> = {
-  critical: 'bg-red-100 border-red-500 text-red-800',
-  high: 'bg-orange-100 border-orange-500 text-orange-800',
-  medium: 'bg-yellow-100 border-yellow-500 text-yellow-800',
-  low: 'bg-green-100 border-green-500 text-green-800',
-};
-
-const riskLevelBadge: Record<string, string> = {
-  critical: 'bg-red-500 text-white',
-  high: 'bg-orange-500 text-white',
-  medium: 'bg-yellow-500 text-white',
-  low: 'bg-green-500 text-white',
+const riskLevelColor: Record<string, string> = {
+  critical: 'text-cobalt',
+  high: 'text-jet',
+  medium: 'text-deep',
+  low: 'text-muted',
 };
 
 interface AlertQueueProps {
@@ -27,72 +19,83 @@ export default function AlertQueue({ cases, loading }: AlertQueueProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <span className="ml-3 text-gray-500">Loading alerts...</span>
+      <div className="py-24 text-center">
+        <div className="inline-block w-6 h-6 border-2 border-jet/20 border-t-jet animate-spin" />
+        <p className="mono-label mt-4">Loading alert data...</p>
       </div>
     );
   }
 
   if (cases.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <AlertTriangle className="mx-auto h-12 w-12 mb-4 opacity-50" />
-        <p className="text-lg">No alerts found</p>
-        <p className="text-sm">Adjust filters or check back later</p>
+      <div className="py-24 text-center">
+        <div className="w-16 h-16 border border-border mx-auto mb-6 flex items-center justify-center">
+          <div className="w-4 h-4 bg-muted/30" />
+        </div>
+        <p className="text-2xl font-bold text-jet mb-2">No Active Alerts</p>
+        <p className="mono-label">
+          System monitoring. No coordinated abuse patterns detected.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {cases.map((c) => (
+    <div>
+      {cases.map((c, index) => (
         <div
           key={c.id}
           onClick={() => navigate(`/case/${c.id}`)}
-          className={clsx(
-            'border-l-4 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow',
-            'bg-white shadow-sm',
-            riskLevelColors[c.risk_level]
-          )}
+          className="list-item"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <span
-                  className={clsx(
-                    'px-2 py-0.5 rounded-full text-xs font-bold uppercase',
-                    riskLevelBadge[c.risk_level]
-                  )}
-                >
-                  {c.risk_level}
-                </span>
-                <span className="text-sm font-mono text-gray-600">{c.id}</span>
-                <span
-                  className={clsx(
-                    'px-2 py-0.5 rounded text-xs',
-                    c.status === 'open'
-                      ? 'bg-blue-100 text-blue-700'
-                      : c.status === 'investigating'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-gray-100 text-gray-700'
-                  )}
-                >
-                  {c.status}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span>Merchant: {c.merchant_id}</span>
-                <span>Account: {c.account_id}</span>
-                <span>Risk Score: {(c.risk_score * 100).toFixed(1)}%</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-1">{c.recommended_action}</p>
+          <div className="grid grid-cols-12 gap-4 items-start">
+            {/* Index */}
+            <div className="col-span-1">
+              <p className="mono-label">{String(index + 1).padStart(3, '0')}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="text-right text-xs text-gray-400">
-                {new Date(c.created_at).toLocaleString()}
+
+            {/* Main Info */}
+            <div className="col-span-6">
+              <div className="flex items-center gap-4 mb-2">
+                <span className={clsx(
+                  'text-5xl font-bold tracking-tight',
+                  riskLevelColor[c.risk_level]
+                )}>
+                  {c.risk_level.toUpperCase()}
+                </span>
               </div>
-              <ChevronRight className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-6 mono-label">
+                <span>{c.id}</span>
+                <span>{c.merchant_id}</span>
+                <span>{c.account_id}</span>
+              </div>
+            </div>
+
+            {/* Score */}
+            <div className="col-span-2 text-right">
+              <p className="label mb-2">Risk Score</p>
+              <p className={clsx(
+                'text-4xl font-black tracking-tight',
+                c.risk_score > 0.7 ? 'text-cobalt' : 
+                c.risk_score > 0.4 ? 'text-jet' : 'text-muted'
+              )}>
+                {(c.risk_score * 100).toFixed(0)}%
+              </p>
+            </div>
+
+            {/* Status & Action */}
+            <div className="col-span-3 text-right">
+              <p className="label mb-2">{c.status.toUpperCase()}</p>
+              <p className="mono-label">
+                {c.recommended_action.replace(/_/g, ' ')}
+              </p>
+              <p className="mono-label mt-2 text-muted">
+                {new Date(c.created_at).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </p>
             </div>
           </div>
         </div>

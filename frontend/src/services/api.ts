@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -66,7 +68,7 @@ export async function fetchCases(filters?: {
   if (filters?.limit) params.append('limit', filters.limit.toString());
   if (filters?.offset) params.append('offset', filters.offset.toString());
 
-  const { data } = await api.get<CasesResponse>(`/cases?${params.toString()}`);
+  const { data } = await api.get<CasesResponse>(`/cases/?${params.toString()}`);
   return data;
 }
 

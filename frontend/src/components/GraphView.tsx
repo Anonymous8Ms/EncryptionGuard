@@ -6,23 +6,23 @@ import type { GraphEvidence } from '../services/api';
 cytoscape.use(coseBilkent);
 
 const nodeColors: Record<string, string> = {
-  account: '#3B82F6',
-  device: '#22C55E',
-  ip: '#EAB308',
-  token: '#A855F7',
-  order: '#6366F1',
-  payment: '#EC4899',
-  refund: '#EF4444',
+  account: '#141414',
+  device: '#1351AA',
+  ip: '#444343',
+  token: '#7A7A7A',
+  order: '#141414',
+  payment: '#1351AA',
+  refund: '#444343',
 };
 
 const nodeLabels: Record<string, string> = {
-  account: 'Account',
-  device: 'Device',
-  ip: 'IP Address',
-  token: 'Token',
-  order: 'Order',
-  payment: 'Payment',
-  refund: 'Refund',
+  account: 'ACCT',
+  device: 'DEV',
+  ip: 'IP',
+  token: 'TKN',
+  order: 'ORD',
+  payment: 'PAY',
+  refund: 'REF',
 };
 
 interface GraphViewProps {
@@ -45,7 +45,7 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
       ...graphData.nodes.map((node) => ({
         data: {
           id: node.id,
-          label: node.label,
+          label: nodeLabels[node.type] || node.type.toUpperCase(),
           type: node.type,
           ...node.properties,
         },
@@ -70,33 +70,36 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
           style: {
             label: 'data(label)',
             'background-color': (ele: cytoscape.NodeSingular) =>
-              nodeColors[ele.data('type')] || '#9CA3AF',
-            color: '#1F2937',
+              nodeColors[ele.data('type')] || '#141414',
+            color: '#E3E2DE',
             'text-valign': 'center',
             'text-halign': 'center',
-            'font-size': '11px',
-            'font-weight': 'bold',
-            width: 50,
-            height: 50,
-            'border-width': 2,
-            'border-color': '#374151',
+            'font-size': '10px',
+            'font-family': '"JetBrains Mono", Consolas, monospace',
+            'font-weight': 700,
+            'letter-spacing': '0.1em',
+            width: 40,
+            height: 40,
+            'border-width': 0,
             'text-wrap': 'ellipsis',
-            'text-max-width': '80px',
+            'text-max-width': '60px',
           } as cytoscape.Css.Node,
         },
         {
           selector: 'edge',
           style: {
-            width: 2,
-            'line-color': '#9CA3AF',
-            'target-arrow-color': '#9CA3AF',
+            width: 1,
+            'line-color': '#C7C7C7',
+            'target-arrow-color': '#C7C7C7',
             'target-arrow-shape': 'triangle',
+            'arrow-scale': 0.8,
             'curve-style': 'bezier',
             label: 'data(relationship)',
             'font-size': '9px',
-            color: '#6B7280',
+            'font-family': '"JetBrains Mono", Consolas, monospace',
+            color: '#7A7A7A',
             'text-rotation': 'autorotate',
-            'text-margin-y': -10,
+            'text-margin-y': -8,
           } as cytoscape.Css.Edge,
         },
       ],
@@ -107,7 +110,7 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
         nodeDimensionsIncludeLabels: true,
         randomize: false,
         fit: true,
-        padding: 30,
+        padding: 40,
       } as cytoscape.LayoutOptions,
     });
 
@@ -123,16 +126,16 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
     <div className={className}>
       <div
         ref={containerRef}
-        className="w-full h-96 border border-gray-200 rounded-lg bg-gray-50"
+        className="w-full h-[500px] border border-border bg-cream"
       />
-      <div className="mt-3 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap gap-8">
         {Object.entries(nodeColors).map(([type, color]) => (
-          <div key={type} className="flex items-center gap-1.5">
+          <div key={type} className="flex items-center gap-3">
             <div
-              className="w-3 h-3 rounded-full border border-gray-400"
+              className="w-3 h-3"
               style={{ backgroundColor: color }}
             />
-            <span className="text-xs text-gray-600">{nodeLabels[type]}</span>
+            <span className="mono-label">{nodeLabels[type]}</span>
           </div>
         ))}
       </div>
