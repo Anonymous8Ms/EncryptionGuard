@@ -12,7 +12,7 @@ Covers:
 
 from __future__ import annotations
 
-from backend.app.services.policy_checker import (
+from app.services.policy_checker import (
     LLMResponse,
     PROHIBITED_PATTERNS,
     validate_llm_response,

@@ -7,6 +7,8 @@ dependency (get_db) for database access.
 
 from __future__ import annotations
 
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -16,15 +18,20 @@ class Base(DeclarativeBase):
     pass
 
 
-# ── Default (production) engine ──────────────────────────────────────────────
-# Override DATABASE_URL in .env for production; default is a local SQLite file
-# so the app can start without Postgres during development / testing.
+# ── Database engine ──────────────────────────────────────────────────────────
+# Reads DATABASE_URL from environment. Falls back to local SQLite for dev.
 
-DEFAULT_DATABASE_URL = "sqlite:///./encryption_guard.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./encryption_guard.db")
+
+# SQLite needs check_same_thread; Postgres does not.
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
 
 engine = create_engine(
-    DEFAULT_DATABASE_URL,
-    connect_args={"check_same_thread": False},  # needed for SQLite
+    DATABASE_URL,
+    connect_args=connect_args,
+    pool_pre_ping=True,
     echo=False,
 )
 

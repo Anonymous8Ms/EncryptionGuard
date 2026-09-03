@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # ── Supabase ──────────────────────────────
     supabase_url: str = ""
     supabase_key: str = ""
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/encryption_guard"
+    database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/encryption_guard"
 
     # ── Neo4j Aura ────────────────────────────
     neo4j_uri: str = "bolt://localhost:7687"

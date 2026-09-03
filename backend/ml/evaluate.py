@@ -27,7 +27,7 @@ from sklearn.metrics import (
     precision_recall_curve,
 )
 
-from backend.ml.train import create_splits, load_data
+from ml.train import create_splits, load_data
 
 
 def load_model(path: str) -> object:

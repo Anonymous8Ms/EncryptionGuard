@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from backend.features.schema import FeatureVector
+from features.schema import FeatureVector
 
 
 class TestFeatureVector:

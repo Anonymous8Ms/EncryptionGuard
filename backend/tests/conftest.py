@@ -17,7 +17,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from backend.app.models.base import Base, get_db
+from app.models.base import Base, get_db
 
 # ── SQLite in-memory test database ───────────────────────────────────────────
 
@@ -57,7 +57,7 @@ def client(db: Session):
 
     # Import the app — adjust path if your main app module differs
     try:
-        from backend.app.main import app
+        from app.main import app
     except ImportError:
         # If there's no main.py yet, create a minimal FastAPI app for testing
         from fastapi import FastAPI

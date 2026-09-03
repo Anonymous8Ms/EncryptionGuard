@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -68,16 +68,16 @@ export async function fetchCases(filters?: {
   if (filters?.limit) params.append('limit', filters.limit.toString());
   if (filters?.offset) params.append('offset', filters.offset.toString());
 
-  const { data } = await api.get<CasesResponse>(`/cases/?${params.toString()}`);
+  const { data } = await api.get<CasesResponse>(`/api/cases/?${params.toString()}`);
   return data;
 }
 
 export async function fetchCase(caseId: string): Promise<CaseDetail> {
-  const { data } = await api.get<CaseDetail>(`/cases/${caseId}`);
+  const { data } = await api.get<CaseDetail>(`/api/cases/${caseId}`);
   return data;
 }
 
 export async function submitFeedback(feedbackData: FeedbackData): Promise<{ status: string }> {
-  const { data } = await api.post<{ status: string }>('/feedback', feedbackData);
+  const { data } = await api.post<{ status: string }>('/api/feedback', feedbackData);
   return data;
 }

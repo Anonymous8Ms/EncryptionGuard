@@ -16,9 +16,9 @@ import hmac
 import pytest
 from sqlalchemy.orm import Session
 
-from backend.app.models.order import Order
-from backend.app.models.refund import Refund
-from backend.app.services.webhook_service import process_webhook, verify_signature
+from app.models.order import Order
+from app.models.refund import Refund
+from app.services.webhook_service import process_webhook, verify_signature
 
 WEBHOOK_SECRET = "test_webhook_secret_12345"
 
