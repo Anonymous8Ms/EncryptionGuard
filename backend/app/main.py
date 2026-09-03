@@ -44,6 +44,11 @@ async def startup():
         logger.error("Database connection FAILED: %s", e)
 
 
+@app.get("/")
+async def root():
+    return {"status": "ok", "version": "5.0.0", "docs": "/docs"}
+
+
 @app.get("/health")
 async def health():
     return {"status": "healthy", "version": "5.0.0"}
