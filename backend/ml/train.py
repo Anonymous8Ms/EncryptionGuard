@@ -27,59 +27,43 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
 def load_data(data_dir: str) -> pd.DataFrame:
-    """Load events.json and aggregate features per account.
-
-    Reads raw event data and computes per-account aggregated features
-    suitable for abuse detection classification.
-
-    Args:
-        data_dir: Path to directory containing events.json.
-
-    Returns:
-        DataFrame with one row per account, containing aggregated features
-        and a binary label (1 = abuse, 0 = legitimate).
-
-    Raises:
-        FileNotFoundError: If events.json does not exist in data_dir.
-    """
-    data_path = Path(data_dir) / "events.json"
+    """Load generated scenario data and aggregate features per account."""
+    data_path = Path(data_dir) / "output" / "all_scenarios.json"
     if not data_path.exists():
-        raise FileNotFoundError(f"Events file not found: {data_path}")
+        raise FileNotFoundError(f"Generated data not found: {data_path}\nRun: python -m data.generator")
 
     with open(data_path, "r") as f:
-        events = json.load(f)
+        scenarios = json.load(f)
 
-    df = pd.DataFrame(events)
+    rows = []
+    for scenario in scenarios:
+        label = scenario["events"][0]["event_label"] if scenario["events"] else 0
+        ring_id = scenario["events"][0].get("ring_id") if scenario["events"] else None
+        scenario_id = scenario.get("scenario_id", "unknown")
 
-    # Aggregate per account
-    agg_df = df.groupby("account_id").agg(
-        total_orders=("order_amount", "count"),
-        total_refunds=("is_refund", "sum"),
-        total_amount=("order_amount", "sum"),
-        avg_amount=("order_amount", "mean"),
-        max_amount=("order_amount", "max"),
-        scenario_id=("scenario_id", "first"),
-    ).reset_index()
+        for acct in scenario["accounts"]:
+            acct_id = acct["account_id"]
+            acct_events = [e for e in scenario["events"] if e.get("payload", {}).get("account_id") == acct_id]
+            orders = [e for e in acct_events if e["event_type"] == "payment_captured"]
+            refunds = [e for e in acct_events if e["event_type"] == "refund_issued"]
+            total_amount = sum(e.get("payload", {}).get("amount_cents", 0) for e in orders)
 
-    # Derived features with safe division
-    agg_df["refund_rate"] = agg_df["total_refunds"] / agg_df["total_orders"]
-    agg_df["refund_ratio"] = np.where(
-        agg_df["total_amount"] > 0,
-        agg_df["total_refunds"] / agg_df["total_amount"],
-        0.0,
-    )
-    agg_df["high_amount"] = (agg_df["max_amount"] > 1000).astype(int)
+            rows.append({
+                "account_id": acct_id,
+                "scenario_id": scenario_id,
+                "ring_id": ring_id,
+                "total_orders": len(orders),
+                "total_refunds": len(refunds),
+                "total_amount": total_amount,
+                "avg_amount": total_amount / len(orders) if orders else 0,
+                "max_amount": max((e.get("payload", {}).get("amount_cents", 0) for e in orders), default=0),
+                "refund_rate": len(refunds) / len(orders) if orders else 0,
+                "refund_ratio": len(refunds) / total_amount if total_amount > 0 else 0,
+                "high_amount": int(max((e.get("payload", {}).get("amount_cents", 0) for e in orders), default=0) > 100000),
+                "label": label,
+            })
 
-    # Label: 1 if any event for the account has label == "abuse", else 0
-    label_df = df.groupby("account_id")["event_label"].apply(
-        lambda x: int((x == "abuse").any())
-    ).reset_index()
-    label_df.columns = ["account_id", "label"]
-
-    agg_df = agg_df.merge(label_df, on="account_id", how="left")
-    agg_df["label"] = agg_df["label"].fillna(0).astype(int)
-
-    return agg_df
+    return pd.DataFrame(rows)
 
 
 def create_splits(

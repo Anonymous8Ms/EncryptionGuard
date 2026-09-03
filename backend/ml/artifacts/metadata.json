@@ -1,0 +1,26 @@
+{
+  "model_type": "XGBClassifier",
+  "baseline_type": "LogisticRegression",
+  "feature_names": [
+    "total_orders",
+    "total_refunds",
+    "total_amount",
+    "avg_amount",
+    "max_amount",
+    "refund_rate",
+    "refund_ratio",
+    "high_amount"
+  ],
+  "hyperparameters": {
+    "learning_rate": 0.01144654350951607,
+    "max_depth": 3,
+    "subsample": 0.9004080615772506,
+    "colsample_bytree": 0.717395059673428,
+    "min_child_weight": 5,
+    "gamma": 4.878603158874204,
+    "scale_pos_weight": 9.766326253704815
+  },
+  "validation_prauc": 0.875,
+  "training_timestamp": "2026-09-03T13:00:33.296668+00:00",
+  "n_features": 8
+}
