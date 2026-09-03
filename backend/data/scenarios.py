@@ -15,6 +15,9 @@ class ScenarioType(str, Enum):
     SHARED_NETWORK = "shared_network"
     SINGLE_ABUSE = "single_abuse"
     COORDINATED_RING = "coordinated_ring"
+    COORDINATED_RING_LARGE = "coordinated_ring_large"
+    NEAR_MISS_SHARED_INFRA = "near_miss_shared_infra"
+    HIGH_LOSS_RING = "high_loss_ring"
 
 
 @dataclass(frozen=True)
@@ -110,5 +113,43 @@ SCENARIOS: list[ScenarioConfig] = [
         token_reuse_prob=0.8,
         label=1,
         ring_id="RING_001",
+    ),
+    # 6. Coordinated ring large — 8-15 accounts, multiple shared entities
+    ScenarioConfig(
+        scenario_type=ScenarioType.COORDINATED_RING_LARGE,
+        num_accounts=12,
+        num_devices=4,
+        num_ips=3,
+        num_payment_tokens=4,
+        num_orders=60,
+        refund_rate=0.65,
+        token_reuse_prob=0.9,
+        label=1,
+        ring_id="RING_002",
+    ),
+    # 7. Near-miss shared infra — looks suspicious but legitimate
+    ScenarioConfig(
+        scenario_type=ScenarioType.NEAR_MISS_SHARED_INFRA,
+        num_accounts=8,
+        num_devices=3,
+        num_ips=2,
+        num_payment_tokens=8,
+        num_orders=30,
+        refund_rate=0.10,
+        token_reuse_prob=0.2,
+        label=0,
+    ),
+    # 8. High loss ring — large amounts, multiple entities shared
+    ScenarioConfig(
+        scenario_type=ScenarioType.HIGH_LOSS_RING,
+        num_accounts=10,
+        num_devices=3,
+        num_ips=2,
+        num_payment_tokens=3,
+        num_orders=50,
+        refund_rate=0.70,
+        token_reuse_prob=0.85,
+        label=1,
+        ring_id="RING_003",
     ),
 ]
