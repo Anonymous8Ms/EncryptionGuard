@@ -66,3 +66,21 @@ services:
         generateValue: true
       - key: APP_ENV
         value: production
+
+  - type: worker
+    name: encryptionguard-beat
+    runtime: python
+    region: oregon
+    buildCommand: bash build.sh
+    startCommand: celery -A app.workers.celery_app beat --loglevel=info
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: production
