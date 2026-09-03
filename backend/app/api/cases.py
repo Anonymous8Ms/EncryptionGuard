@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -56,6 +57,16 @@ async def get_case(case_id: str, db: Session = Depends(get_db)):
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
 
+    def _parse_json(val):
+        if val is None:
+            return {}
+        if isinstance(val, str):
+            try:
+                return json.loads(val)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return val
+
     return {
         "id": case.id,
         "merchant_id": case.merchant_id,
@@ -64,11 +75,11 @@ async def get_case(case_id: str, db: Session = Depends(get_db)):
         "risk_level": case.risk_level,
         "status": case.status,
         "recommended_action": case.recommended_action,
-        "evidence": case.evidence,
-        "graph_evidence": case.graph_evidence,
-        "shap_values": case.shap_values,
-        "model_version": case.model_version,
+        "evidence": _parse_json(case.evidence),
+        "graph_evidence": _parse_json(case.graph_evidence),
+        "shap_values": _parse_json(case.shap_values),
+        "model_version": case.model_version or "v5.0",
         "llm_summary": case.llm_summary,
-        "created_at": case.created_at.isoformat(),
-        "updated_at": case.updated_at.isoformat()
+        "created_at": case.created_at.isoformat() if case.created_at else "",
+        "updated_at": case.updated_at.isoformat() if case.updated_at else ""
     }
