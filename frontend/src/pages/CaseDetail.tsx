@@ -71,14 +71,22 @@ export default function CaseDetail() {
     );
   }
 
-  const sortedShapValues = Object.entries(caseData.shap_values)
-    .map(([feature, value]) => ({ feature, value }))
+  const shapValues = caseData.shap_values && typeof caseData.shap_values === 'object'
+    ? caseData.shap_values
+    : {};
+
+  const sortedShapValues = Object.entries(shapValues)
+    .map(([feature, value]) => ({ feature, value: typeof value === 'number' ? value : 0 }))
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
 
   const maxShapValue = Math.max(
     ...sortedShapValues.map((s) => Math.abs(s.value)),
     0.01
   );
+
+  const graphEvidence = caseData.graph_evidence && typeof caseData.graph_evidence === 'object'
+    ? caseData.graph_evidence
+    : { nodes: [], edges: [] };
 
   const riskConfig = riskLevelConfig[caseData.risk_level] || riskLevelConfig.low;
 
@@ -108,7 +116,7 @@ export default function CaseDetail() {
           <div className="col-span-3 flex items-center justify-end">
             <div className="status-indicator">
               <div className="status-dot active" />
-              <span className="mono-label">{caseData.status.toUpperCase()}</span>
+              <span className="mono-label">{(caseData.status || 'unknown').toUpperCase()}</span>
             </div>
           </div>
         </div>
@@ -124,15 +132,15 @@ export default function CaseDetail() {
               <div className="space-y-4">
                 <div>
                   <p className="mono-label">Merchant</p>
-                  <p className="text-lg font-bold text-jet mt-1">{caseData.merchant_id}</p>
+                  <p className="text-lg font-bold text-jet mt-1">{caseData.merchant_id || 'unknown'}</p>
                 </div>
                 <div>
                   <p className="mono-label">Account</p>
-                  <p className="text-lg font-bold text-jet mt-1">{caseData.account_id}</p>
+                  <p className="text-lg font-bold text-jet mt-1">{caseData.account_id || 'unknown'}</p>
                 </div>
                 <div>
                   <p className="mono-label">Model Version</p>
-                  <p className="text-lg font-bold text-jet mt-1">{caseData.model_version}</p>
+                  <p className="text-lg font-bold text-jet mt-1">{caseData.model_version || 'v5.0'}</p>
                 </div>
               </div>
             </div>
@@ -154,15 +162,15 @@ export default function CaseDetail() {
               <div className="flex items-end gap-4">
                 <p className={clsx(
                   'text-[10rem] font-black leading-none tracking-tight',
-                  caseData.risk_score > 0.7 ? 'text-cobalt' : 
-                  caseData.risk_score > 0.4 ? 'text-jet' : 'text-muted'
+                  (caseData.risk_score || 0) > 0.7 ? 'text-cobalt' :
+                  (caseData.risk_score || 0) > 0.4 ? 'text-jet' : 'text-muted'
                 )}>
-                  {(caseData.risk_score * 100).toFixed(0)}
+                  {((caseData.risk_score || 0) * 100).toFixed(0)}
                 </p>
                 <p className="text-4xl font-bold text-muted mb-8">%</p>
               </div>
               <p className="mono-label mt-4">
-                RECOMMENDED: {caseData.recommended_action.replace(/_/g, ' ').toUpperCase()}
+                RECOMMENDED: {(caseData.recommended_action || 'unknown').replace(/_/g, ' ').toUpperCase()}
               </p>
             </div>
           </div>
@@ -198,7 +206,7 @@ export default function CaseDetail() {
             </div>
           </div>
           <div className="col-span-9 px-16 py-16">
-            <GraphView graphData={caseData.graph_evidence} />
+            <GraphView graphData={graphEvidence} />
           </div>
         </div>
       </section>

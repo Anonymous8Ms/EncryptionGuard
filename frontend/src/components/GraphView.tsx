@@ -34,6 +34,9 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
+  const nodes = graphData?.nodes || [];
+  const edges = graphData?.edges || [];
+
   useEffect(() => {
     if (!containerRef.current || !graphData) return;
 
@@ -42,7 +45,7 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
     }
 
     const elements: cytoscape.ElementDefinition[] = [
-      ...graphData.nodes.map((node) => ({
+      ...nodes.map((node) => ({
         data: {
           id: node.id,
           label: nodeLabels[node.type] || node.type.toUpperCase(),
@@ -50,7 +53,7 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
           ...node.properties,
         },
       })),
-      ...graphData.edges.map((edge, idx) => ({
+      ...edges.map((edge, idx) => ({
         data: {
           id: `edge-${idx}`,
           source: edge.source,
@@ -121,6 +124,22 @@ export default function GraphView({ graphData, className }: GraphViewProps) {
       }
     };
   }, [graphData]);
+
+  if (nodes.length === 0) {
+    return (
+      <div className={className}>
+        <div className="w-full h-[500px] border border-border bg-cream flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border border-border mx-auto mb-6 flex items-center justify-center">
+              <div className="w-4 h-4 bg-muted/30" />
+            </div>
+            <p className="text-lg font-bold text-jet mb-2">No Graph Data</p>
+            <p className="mono-label">Network relationships will appear here when available.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
