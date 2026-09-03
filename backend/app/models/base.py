@@ -1,16 +1,16 @@
 """
 EncryptionGuard v5 — SQLAlchemy base and session configuration.
-
-Provides the declarative Base, engine, session factory, and a FastAPI
-dependency (get_db) for database access.
 """
 
 from __future__ import annotations
 
+import logging
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+logger = logging.getLogger(__name__)
 
 
 class Base(DeclarativeBase):
@@ -18,26 +18,31 @@ class Base(DeclarativeBase):
     pass
 
 
-# ── Database engine ──────────────────────────────────────────────────────────
-# Reads DATABASE_URL from environment. Falls back to local SQLite for dev.
+def _build_engine():
+    """Try PostgreSQL first; fall back to SQLite if unreachable."""
+    db_url = os.getenv("DATABASE_URL", "")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./encryption_guard.db")
+    if db_url and db_url.startswith("postgresql"):
+        try:
+            eng = create_engine(db_url, pool_pre_ping=True, echo=False)
+            with eng.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("Connected to PostgreSQL")
+            return eng
+        except Exception as e:
+            logger.warning("PostgreSQL unreachable (%s), falling back to SQLite", e)
 
-# SQLite needs check_same_thread; Postgres does not.
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
+    sqlite_url = "sqlite:///./encryption_guard.db"
+    logger.info("Using SQLite: %s", sqlite_url)
+    return create_engine(
+        sqlite_url,
+        connect_args={"check_same_thread": False},
+        echo=False,
+    )
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-    echo=False,
-)
 
+engine = _build_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Alias used by tests
 TestingSessionLocal = SessionLocal
 
 
