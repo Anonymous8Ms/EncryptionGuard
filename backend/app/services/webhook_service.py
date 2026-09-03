@@ -88,13 +88,29 @@ def process_webhook(
     envelope.processed_at = datetime.utcnow()
     db.commit()
 
-    # Enqueue scoring task
+    # Score the event directly (no Celery needed)
     try:
-        from app.workers.tasks import process_webhook_event
+        from app.services.scoring import get_scoring_service
+        scoring_service = get_scoring_service()
         entity = _normalize_event(payload, merchant_id, event_type)
-        process_webhook_event.delay(event_id, event_type, entity)
+        features = _extract_features(entity)
+        scoring_result = scoring_service.score(features)
+
+        # Update case with scoring result
+        case = db.query(Case).filter(Case.account_id == entity.get("entity_id")).first()
+        if case:
+            case.risk_score = scoring_result["risk_score"]
+            case.risk_level = scoring_result["risk_label"]
+            case.recommended_action = scoring_result["risk_label"]
+            import json
+            case.shap_values = json.dumps({
+                c["feature"]: c["contribution"]
+                for c in scoring_result.get("shap_contributions", [])
+            })
+            db.commit()
+            logger.info("Case %s scored: risk=%.3f label=%s", case.id, scoring_result["risk_score"], scoring_result["risk_label"])
     except Exception as e:
-        logger.warning("Failed to enqueue scoring task: %s", e)
+        logger.warning("Scoring failed: %s", e)
 
     logger.info("Webhook processed: %s (event: %s)", event_id, event_type)
     return {"status": "processed", "event_id": event_id, "event_type": event_type}
@@ -157,3 +173,17 @@ def _update_case(db: Session, event: dict, merchant_id: str):
         evidence["events"] = evidence.get("events", []) + [event_type]
         case.evidence = json.dumps(evidence)
         case.updated_at = datetime.utcnow()
+
+
+def _extract_features(event: dict) -> dict:
+    """Extract feature values from normalized event."""
+    return {
+        "total_orders": 1,
+        "total_refunds": 1 if event.get("event_type") == "refund" else 0,
+        "total_amount": 0,
+        "avg_amount": 0,
+        "max_amount": 0,
+        "refund_rate": 1.0 if event.get("event_type") == "refund" else 0.0,
+        "refund_ratio": 1.0 if event.get("event_type") == "refund" else 0.0,
+        "high_amount": 0,
+    }
