@@ -51,6 +51,7 @@ def startup():
 
 def _seed(db):
     import json, uuid
+    from app.models.cases import Case
     scenarios = [
         ("coordinated_ring", "critical", 0.92, "hold_for_review", "open"),
         ("coordinated_ring", "critical", 0.88, "hold_for_review", "open"),
