@@ -87,7 +87,15 @@ def process_webhook(
     
     envelope.processed_at = datetime.utcnow()
     db.commit()
-    
+
+    # Enqueue scoring task
+    try:
+        from app.workers.tasks import process_webhook_event
+        entity = _normalize_event(payload, merchant_id, event_type)
+        process_webhook_event.delay(event_id, event_type, entity)
+    except Exception as e:
+        logger.warning("Failed to enqueue scoring task: %s", e)
+
     logger.info("Webhook processed: %s (event: %s)", event_id, event_type)
     return {"status": "processed", "event_id": event_id, "event_type": event_type}
 
