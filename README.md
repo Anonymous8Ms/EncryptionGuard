@@ -2,89 +2,91 @@
 
 Explainable AI for detecting coordinated refund abuse on Razorpay.
 
-## Overview
-
-EncryptionGuard identifies suspicious accounts, devices, IPs, and payment tokens that collectively exhibit refund-abuse behavior. The system estimates merchant exposure, explains evidence using SHAP and graph analysis, and recommends bounded responses (allow, monitor, step_up_verification, manual_review, hold_for_review).
-
-### Key Features
-
-- **Coordinated ring detection** — Neo4j graph analysis with Louvain community detection and PageRank centrality
-- **ML risk scoring** — XGBoost with Optuna tuning, SHAP TreeExplainer for feature-level explanations
-- **Real-time webhook processing** — FastAPI receiver with HMAC-SHA256 validation and idempotent processing
-- **Analyst dashboard** — React + TypeScript + Cytoscape.js interactive graph visualization
-- **LLM assistant** — Xiaomi MiMo API for evidence summarization with deterministic policy checker
-- **Cloud-first** — Supabase (PostgreSQL), Neo4j Aura, Redis Cloud — no local Docker required
-
 ## Quick Start
 
 ```bash
-# 1. Install dependencies
-make install
+git clone https://github.com/Anonymous8Ms/EncryptionGuard.git
+cd EncryptionGuard
 
-# 2. Configure environment
-cp backend/.env.example backend/.env
-# Edit backend/.env with your credentials
+# Backend
+cd backend
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your credentials
 
-# 3. Generate synthetic data
-make generate
+# Generate synthetic data
+python -m data.generator
 
-# 4. Train the ML model
-make train
+# Train ML model
+python -m ml.train --data-dir data --output-dir ml/artifacts --n-trials 20
 
-# 5. Evaluate model
-make evaluate
+# Evaluate
+python -m ml.evaluate --model-path ml/artifacts/model.pkl --data-dir data --output-dir ml/artifacts
 
-# 6. Run development servers
-make dev
-# Backend API → http://localhost:8000
-# Frontend   → http://localhost:3000
+# Run backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# 7. Run tests
-make test
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
 ```
+
+## Live Demo
+
+- **Frontend**: https://encryptionguard-e39wgjpcn-anonymous8ms-projects.vercel.app
+- **Backend API**: https://encryptionguard.onrender.com
+- **API Docs**: https://encryptionguard.onrender.com/docs
+
+## Evaluation Results
+
+| Metric | Value |
+|--------|-------|
+| PR-AUC | 0.7222 |
+| Test Samples | 72 |
+| Abuse Rate | 72.22% |
+| Model | XGBoost + Optuna (20 trials) |
+
+Cross-seed report (seeds 42, 123, 999):
+- PR-AUC: 0.7222 ± 0.0000
+
+See `backend/ml/artifacts/MODEL_CARD.md` for full model card.
 
 ## Architecture
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Frontend   │────▶│  FastAPI     │────▶│  Supabase    │
-│  React+Vite  │     │  Backend     │     │ (PostgreSQL) │
+│   Frontend   │────▶│  FastAPI     │────▶│  SQLite/     │
+│  React+Vite  │     │  Backend     │     │  Supabase    │
 └──────────────┘     └──────┬───────┘     └──────────────┘
                             │
                    ┌────────┼────────┐
                    ▼        ▼        ▼
              ┌──────────┐ ┌──────┐ ┌──────────┐
-             │  Neo4j   │ │Redis │ │ Celery   │
-             │  Aura    │ │Cloud │ │ Workers  │
+             │  Neo4j   │ │Redis │ │ XGBoost  │
+             │  Aura    │ │Cloud │ │ ML Model │
              └──────────┘ └──────┘ └──────────┘
-                            │
-                   ┌────────┼────────┐
-                   ▼                 ▼
-             ┌──────────┐     ┌──────────┐
-             │ XGBoost  │     │ MiMo API │
-             │ ML Model │     │ (LLM)    │
-             └──────────┘     └──────────┘
 ```
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/` | Root status |
 | GET | `/health` | Health check |
 | POST | `/api/webhooks/razorpay` | Razorpay webhook receiver |
-| GET | `/api/cases` | List cases with filters |
+| GET | `/api/cases/` | List cases with filters |
 | GET | `/api/cases/{id}` | Case detail with evidence |
-| POST | `/api/feedback` | Submit analyst feedback |
+| POST | `/api/feedback/` | Submit analyst feedback |
 
 ## Tech Stack
 
 | Concern | Choice |
 |---------|--------|
 | API | Python + FastAPI |
-| Database | Supabase (PostgreSQL) |
+| Database | SQLite (dev) / Supabase PostgreSQL (prod) |
 | Graph store | Neo4j Aura |
 | Velocity cache | Redis Cloud |
-| Background queue | Celery with Redis broker |
 | Frontend | React + TypeScript + Vite + Tailwind CSS |
 | Graph visualization | Cytoscape.js |
 | ML model | XGBoost with Optuna tuning |
@@ -94,71 +96,65 @@ make test
 ## Project Structure
 
 ```
-Encryption Guard/
-├── Makefile                    # Build commands
-├── notebooks/                  # Jupyter analysis
-│   ├── 01_eda.ipynb           # Exploratory data analysis
-│   ├── 02_feature_correlation.ipynb
-│   ├── 03_pr_curves.ipynb     # Precision-recall curves
-│   └── 04_shap_plots.ipynb    # SHAP visualizations
+EncryptionGuard/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py            # FastAPI application
-│   │   ├── config.py          # Settings from .env
-│   │   ├── api/               # Route handlers
-│   │   ├── models/            # SQLAlchemy models
-│   │   ├── services/          # Business logic
-│   │   └── workers/           # Celery tasks
-│   ├── features/              # Shared feature library
-│   │   ├── velocity.py        # Redis velocity features
-│   │   ├── graph.py           # Neo4j graph features
-│   │   └── schema.py          # FeatureVector model
+│   │   ├── main.py              # FastAPI application
+│   │   ├── api/                 # Route handlers
+│   │   ├── models/              # SQLAlchemy models
+│   │   ├── services/            # Scoring, LLM, webhook
+│   │   └── workers/             # Celery tasks
+│   ├── features/                # Feature engineering
+│   │   ├── schema.py            # FeatureVector model
+│   │   ├── velocity.py          # Redis velocity features
+│   │   └── graph.py             # Neo4j graph features
 │   ├── ml/
-│   │   ├── train.py           # XGBoost training + Optuna
-│   │   ├── evaluate.py        # Model evaluation
-│   │   └── model_card.py      # Model card generator
+│   │   ├── train.py             # XGBoost + Optuna training
+│   │   ├── evaluate.py          # Model evaluation
+│   │   ├── model_card.py        # Model card generator
+│   │   └── artifacts/           # Trained models
 │   ├── data/
-│   │   └── generator.py       # Scenario generator
-│   ├── tests/                 # Test suite
-│   ├── migrations/            # SQL schema
-│   ├── requirements.txt
-│   └── .env.example
+│   │   ├── generator.py         # Synthetic data generator
+│   │   └── scenarios.py         # Scenario definitions
+│   ├── tests/                   # Test suite (18 tests)
+│   └── migrations/              # SQL schema
 ├── frontend/
 │   ├── src/
-│   │   ├── components/        # AlertQueue, GraphView, FeedbackButtons
-│   │   ├── pages/             # Dashboard, CaseDetail
-│   │   └── services/          # API client
+│   │   ├── components/          # AlertQueue, GraphView, FeedbackButtons
+│   │   ├── pages/               # Dashboard, CaseDetail, Analytics
+│   │   └── services/            # API client
 │   └── package.json
-└── docs/
-    └── compose/               # Design specs & plans
+└── notebooks/                   # Jupyter analysis
 ```
 
 ## ML Pipeline
 
-1. **Data generation** — Synthetic scenario generator with 5 types: Normal, Legitimate Refund, Shared Network, Single Abuse, Coordinated Ring
-2. **Feature engineering** — Shared `features/` module used by both online scoring and offline training (prevents training-serving skew)
-3. **Training** — XGBoost with Bayesian optimization (Optuna, 100 trials), class-weighted loss
-4. **Evaluation** — PR-AUC, precision, recall, ring-level metrics, calibration, cost-sensitive thresholds
-5. **Explainability** — SHAP TreeExplainer for feature contributions, graph evidence for relationship analysis
-
-## Graph Model
-
-- **Nodes**: Account, Device, IPAddress, PaymentToken, Order, Payment, Refund
-- **Edges**: USES, ORIGINATED_FROM, SHIPS_TO, PAID_WITH, PLACED, HAS_PAYMENT, HAS_REFUND
-- **TTL**: 90-day edge expiration with query-time filtering and weekly hard delete
-- **Algorithms**: Connected components, Louvain community detection, PageRank centrality
+1. **Data generation** — 8 scenario families: Normal, Legitimate Refund, Shared Network, Single Abuse, Coordinated Ring, Coordinated Ring Large, Near-Miss Shared Infra, High Loss Ring
+2. **Feature engineering** — 27 features: velocity (Redis), graph (Neo4j), transaction
+3. **Training** — XGBoost with Bayesian optimization (Optuna, 20 trials), class-weighted loss
+4. **Evaluation** — PR-AUC, precision, recall, confusion matrix, PR curve
+5. **Explainability** — SHAP TreeExplainer for feature contributions
 
 ## Testing
 
 ```bash
-make test
+cd backend && pytest tests/ -v
 ```
 
-Tests cover:
-- Webhook signature verification and idempotency
-- Feature vector serialization and type enforcement
-- Split leakage prevention (ring IDs, scenario IDs)
-- Policy checker (prohibited content, irreversible actions, citation validation)
+All 18 tests pass:
+- Webhook signature verification (3 tests)
+- Webhook processing (3 tests)
+- Feature vector validation (3 tests)
+- Policy checker (6 tests)
+- Data split (3 tests)
+
+## What Broke
+
+1. **SQLite on Render wipes on every deploy** — Render's free tier uses ephemeral filesystem. We implemented SQLite fallback that auto-seeds on startup.
+
+2. **ModuleNotFoundError: backend.app** — Import paths used `backend.` prefix which failed on Render. Fixed by using relative imports.
+
+3. **Route mismatch** — Frontend called `/cases/` but backend expected `/api/cases/`. Fixed by standardizing on `/api/` prefix and setting `VITE_API_URL` on Vercel.
 
 ## License
 
