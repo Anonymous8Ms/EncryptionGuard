@@ -104,10 +104,16 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="flex flex-col gap-4">
-                <button className="btn-primary w-full">
+                <button
+                  className="btn-primary w-full"
+                  onClick={() => document.getElementById('alert-queue')?.scrollIntoView({ behavior: 'smooth' })}
+                >
                   View Active Cases
                 </button>
-                <button className="btn-secondary w-full">
+                <button
+                  className="btn-secondary w-full"
+                  onClick={() => window.open('https://encryptionguard.onrender.com/docs', '_blank')}
+                >
                   System Documentation
                 </button>
               </div>
@@ -181,7 +187,7 @@ export default function Dashboard() {
       </section>
 
       {/* Alert Queue Section */}
-      <section className="border-b border-border">
+      <section id="alert-queue" className="border-b border-border">
         <div className="grid-12 max-w-[1440px] mx-auto">
           {/* Sidebar */}
           <div className="col-span-3 border-r border-border px-8 py-16">
