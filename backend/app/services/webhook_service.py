@@ -102,7 +102,6 @@ def process_webhook(
             case.risk_score = scoring_result["risk_score"]
             case.risk_level = scoring_result["risk_label"]
             case.recommended_action = scoring_result["risk_label"]
-            import json
             case.shap_values = json.dumps({
                 c["feature"]: c["contribution"]
                 for c in scoring_result.get("shap_contributions", [])
