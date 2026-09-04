@@ -34,7 +34,7 @@ npm run dev
 
 ## Live Demo
 
-- **Frontend**: https://encryptionguard-e39wgjpcn-anonymous8ms-projects.vercel.app
+- **Frontend**: https://encryptionguard-three.vercel.app
 - **Backend API**: https://encryptionguard.onrender.com
 - **API Docs**: https://encryptionguard.onrender.com/docs
 
