@@ -26,10 +26,10 @@ async def submit_feedback(
 
     db_feedback = Feedback(
         case_id=req.case_id,
-        event_id=req.case_id,  # use case_id as event_id for now
-        label=req.feedback,
-        analyst="analyst",  # default analyst identifier
-        model_version=case.model_version
+        disposition=req.feedback,
+        analyst_id="analyst",
+        model_version=case.model_version,
+        notes=req.analyst_notes
     )
     db.add(db_feedback)
     db.commit()

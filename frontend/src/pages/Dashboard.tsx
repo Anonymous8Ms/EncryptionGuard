@@ -112,7 +112,7 @@ export default function Dashboard() {
                 </button>
                 <button
                   className="btn-secondary w-full"
-                  onClick={() => window.open('https://encryptionguard.onrender.com/docs', '_blank')}
+                  onClick={() => window.open('https://encryptionguard.onrender.com/redoc', '_blank')}
                 >
                   System Documentation
                 </button>
@@ -264,7 +264,7 @@ export default function Dashboard() {
           </div>
           <div className="col-span-3 flex items-center justify-end">
             <p className="mono-label text-cream/40">
-              © 2026 Xiaomi
+              © 2026 EncryptionGuard
             </p>
           </div>
         </div>
