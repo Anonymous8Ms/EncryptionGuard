@@ -1,4 +1,4 @@
-# EncryptionGuard v5
+# EncryptionGuard 
 
 Explainable AI for detecting coordinated refund abuse on Razorpay.
 
@@ -156,6 +156,3 @@ All 18 tests pass:
 
 3. **Route mismatch** — Frontend called `/cases/` but backend expected `/api/cases/`. Fixed by standardizing on `/api/` prefix and setting `VITE_API_URL` on Vercel.
 
-## License
-
-Proprietary — Xiaomi Internal Use Only
