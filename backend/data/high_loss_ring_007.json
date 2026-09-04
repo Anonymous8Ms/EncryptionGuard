@@ -1,0 +1,909 @@
+{
+  "scenario_type": "high_loss_ring",
+  "scenario_id": "scn_c068a64cd5d6",
+  "merchant": [
+    {
+      "merchant_id": "mch_bdd640fb0667",
+      "name": "Merchant_HFTR",
+      "category": "food_delivery",
+      "created_at": "2026-07-22T15:55:03.000236+00:00"
+    }
+  ],
+  "accounts": [
+    {
+      "account_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "email": "okklagloxo@protonmail.com",
+      "created_at": "2024-10-07T00:00:00+00:00"
+    },
+    {
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "email": "ubauljvox@gmail.com",
+      "created_at": "2024-08-26T00:00:00+00:00"
+    },
+    {
+      "account_id": "acc_05b3f1162062",
+      "merchant_id": "mch_bdd640fb0667",
+      "email": "dwtjwq@fastmail.com",
+      "created_at": "2024-09-29T00:00:00+00:00"
+    }
+  ],
+  "devices": [
+    {
+      "device_id": "dev_00e5ebaf2eb0",
+      "fingerprint": "fp_47691dcbd0c9",
+      "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4) Mobile/15E148",
+      "created_at": "2026-04-07T15:55:03.037446+00:00"
+    },
+    {
+      "device_id": "dev_13149627d586",
+      "fingerprint": "fp_b0646038e727",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0",
+      "created_at": "2026-05-16T15:55:03.037449+00:00"
+    }
+  ],
+  "ips": [
+    {
+      "ip_id": "ip_ab1f0327e59a",
+      "address": "109.216.137.24",
+      "asn": "AS5838",
+      "country": "US"
+    },
+    {
+      "ip_id": "ip_649ad218a5b5",
+      "address": "104.153.44.182",
+      "asn": "AS6917",
+      "country": "US"
+    }
+  ],
+  "payment_tokens": [
+    {
+      "token_id": "tok_f14dfb3efe3c",
+      "token_value": "ptok_demo_ik3td",
+      "brand": "amex",
+      "last4": "9690",
+      "created_at": "2026-06-28T15:55:03.037459+00:00"
+    },
+    {
+      "token_id": "tok_9d7c24ce85d5",
+      "token_value": "ptok_demo_a11pt",
+      "brand": "amex",
+      "last4": "4820",
+      "created_at": "2026-04-16T15:55:03.037463+00:00"
+    }
+  ],
+  "orders": [
+    {
+      "order_id": "ord_f1904cecc2d4",
+      "account_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_ab1f0327e59a",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 97111,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-19T04:00:00+00:00"
+    },
+    {
+      "order_id": "ord_b4c0c39a4a71",
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 24148,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-19T05:00:00+00:00"
+    },
+    {
+      "order_id": "ord_29a7f0412d51",
+      "account_id": "acc_05b3f1162062",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 37439,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-19T05:00:00+00:00"
+    },
+    {
+      "order_id": "ord_4b2c8bffae57",
+      "account_id": "acc_05b3f1162062",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 98239,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-19T12:00:00+00:00"
+    },
+    {
+      "order_id": "ord_66386c22a1d2",
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_ab1f0327e59a",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 58055,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-19T13:00:00+00:00"
+    },
+    {
+      "order_id": "ord_014b683647ad",
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_ab1f0327e59a",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 15812,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-19T15:00:00+00:00"
+    },
+    {
+      "order_id": "ord_6b707ef6fe62",
+      "account_id": "acc_05b3f1162062",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_ab1f0327e59a",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 19502,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-19T13:00:00+00:00"
+    },
+    {
+      "order_id": "ord_f2e3fdc9c0c8",
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 15966,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-19T18:00:00+00:00"
+    },
+    {
+      "order_id": "ord_2f99180750a2",
+      "account_id": "acc_05b3f1162062",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 112541,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-19T22:00:00+00:00"
+    },
+    {
+      "order_id": "ord_122533fd765e",
+      "account_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_ab1f0327e59a",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 113271,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-19T19:00:00+00:00"
+    },
+    {
+      "order_id": "ord_9146d391cc25",
+      "account_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 137313,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-20T02:00:00+00:00"
+    },
+    {
+      "order_id": "ord_cf998da34f94",
+      "account_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_ab1f0327e59a",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 141643,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-20T01:00:00+00:00"
+    },
+    {
+      "order_id": "ord_9c5bad2ea9fb",
+      "account_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 106217,
+      "currency": "USD",
+      "status": "refunded",
+      "created_at": "2025-02-20T02:00:00+00:00"
+    },
+    {
+      "order_id": "ord_6bb17a8b26c1",
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_13149627d586",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 139420,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-20T04:00:00+00:00"
+    },
+    {
+      "order_id": "ord_4cb0fe85e418",
+      "account_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "device_id": "dev_00e5ebaf2eb0",
+      "ip_id": "ip_649ad218a5b5",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 142566,
+      "currency": "USD",
+      "status": "completed",
+      "created_at": "2025-02-20T09:00:00+00:00"
+    }
+  ],
+  "payments": [
+    {
+      "payment_id": "pay_12a59eaff0d4",
+      "order_id": "ord_f1904cecc2d4",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 97111,
+      "status": "captured",
+      "created_at": "2025-02-19T04:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_7cffc54b2351",
+      "order_id": "ord_b4c0c39a4a71",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 24148,
+      "status": "refunded",
+      "created_at": "2025-02-19T05:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_55928cd57a3f",
+      "order_id": "ord_29a7f0412d51",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 37439,
+      "status": "refunded",
+      "created_at": "2025-02-19T05:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_0b9d7654d5c3",
+      "order_id": "ord_4b2c8bffae57",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 98239,
+      "status": "refunded",
+      "created_at": "2025-02-19T12:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_57988711e602",
+      "order_id": "ord_66386c22a1d2",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 58055,
+      "status": "refunded",
+      "created_at": "2025-02-19T13:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_a6e62c018529",
+      "order_id": "ord_014b683647ad",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 15812,
+      "status": "captured",
+      "created_at": "2025-02-19T15:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_8ad09042ef18",
+      "order_id": "ord_6b707ef6fe62",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 19502,
+      "status": "captured",
+      "created_at": "2025-02-19T13:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_5f2e621e9309",
+      "order_id": "ord_f2e3fdc9c0c8",
+      "token_id": "tok_9d7c24ce85d5",
+      "amount_cents": 15966,
+      "status": "captured",
+      "created_at": "2025-02-19T18:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_0b2aa744e14f",
+      "order_id": "ord_2f99180750a2",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 112541,
+      "status": "captured",
+      "created_at": "2025-02-19T22:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_03c3c30dae34",
+      "order_id": "ord_122533fd765e",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 113271,
+      "status": "refunded",
+      "created_at": "2025-02-19T19:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_8e2a4c5a97d5",
+      "order_id": "ord_9146d391cc25",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 137313,
+      "status": "refunded",
+      "created_at": "2025-02-20T02:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_c5404be9e6d5",
+      "order_id": "ord_cf998da34f94",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 141643,
+      "status": "captured",
+      "created_at": "2025-02-20T01:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_1197aeb02ee4",
+      "order_id": "ord_9c5bad2ea9fb",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 106217,
+      "status": "refunded",
+      "created_at": "2025-02-20T02:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_45e3e268dcae",
+      "order_id": "ord_6bb17a8b26c1",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 139420,
+      "status": "captured",
+      "created_at": "2025-02-20T04:00:00+00:00"
+    },
+    {
+      "payment_id": "pay_4dbb55598c12",
+      "order_id": "ord_4cb0fe85e418",
+      "token_id": "tok_f14dfb3efe3c",
+      "amount_cents": 142566,
+      "status": "captured",
+      "created_at": "2025-02-20T09:00:00+00:00"
+    }
+  ],
+  "refunds": [
+    {
+      "refund_id": "ref_ac480aa48ab4",
+      "payment_id": "pay_7cffc54b2351",
+      "order_id": "ord_b4c0c39a4a71",
+      "amount_cents": 24148,
+      "reason": "defective",
+      "created_at": "2025-02-20T05:50:00+00:00"
+    },
+    {
+      "refund_id": "ref_e1b340eeb506",
+      "payment_id": "pay_55928cd57a3f",
+      "order_id": "ord_29a7f0412d51",
+      "amount_cents": 37439,
+      "reason": "changed_mind",
+      "created_at": "2025-02-19T15:28:00+00:00"
+    },
+    {
+      "refund_id": "ref_243bb30693f6",
+      "payment_id": "pay_0b9d7654d5c3",
+      "order_id": "ord_4b2c8bffae57",
+      "amount_cents": 98239,
+      "reason": "not_as_described",
+      "created_at": "2025-02-22T05:08:00+00:00"
+    },
+    {
+      "refund_id": "ref_22d1b5fad3c8",
+      "payment_id": "pay_57988711e602",
+      "order_id": "ord_66386c22a1d2",
+      "amount_cents": 58055,
+      "reason": "changed_mind",
+      "created_at": "2025-02-19T20:29:00+00:00"
+    },
+    {
+      "refund_id": "ref_fcebe192d479",
+      "payment_id": "pay_03c3c30dae34",
+      "order_id": "ord_122533fd765e",
+      "amount_cents": 113271,
+      "reason": "defective",
+      "created_at": "2025-02-22T09:16:00+00:00"
+    },
+    {
+      "refund_id": "ref_476e6a0641d0",
+      "payment_id": "pay_8e2a4c5a97d5",
+      "order_id": "ord_9146d391cc25",
+      "amount_cents": 137313,
+      "reason": "duplicate_order",
+      "created_at": "2025-02-22T07:22:00+00:00"
+    },
+    {
+      "refund_id": "ref_ca6935bdc89e",
+      "payment_id": "pay_1197aeb02ee4",
+      "order_id": "ord_9c5bad2ea9fb",
+      "amount_cents": 106217,
+      "reason": "defective",
+      "created_at": "2025-02-21T16:13:00+00:00"
+    }
+  ],
+  "events": [
+    {
+      "event_type": "account_created",
+      "entity_type": "account",
+      "entity_id": "acc_a40e0199a910",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "account_id": "acc_a40e0199a910",
+        "merchant_id": "mch_bdd640fb0667",
+        "email": "ubauljvox@gmail.com",
+        "created_at": "2024-08-26T00:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2024-08-26T00:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "account_created",
+      "entity_type": "account",
+      "entity_id": "acc_05b3f1162062",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "account_id": "acc_05b3f1162062",
+        "merchant_id": "mch_bdd640fb0667",
+        "email": "dwtjwq@fastmail.com",
+        "created_at": "2024-09-29T00:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2024-09-29T00:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "account_created",
+      "entity_type": "account",
+      "entity_id": "acc_b9c1f1b288c7",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "account_id": "acc_b9c1f1b288c7",
+        "merchant_id": "mch_bdd640fb0667",
+        "email": "okklagloxo@protonmail.com",
+        "created_at": "2024-10-07T00:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2024-10-07T00:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_12a59eaff0d4",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_12a59eaff0d4",
+        "order_id": "ord_f1904cecc2d4",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 97111,
+        "status": "captured",
+        "created_at": "2025-02-19T04:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T04:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_7cffc54b2351",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_7cffc54b2351",
+        "order_id": "ord_b4c0c39a4a71",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 24148,
+        "status": "captured",
+        "created_at": "2025-02-19T05:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T05:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_55928cd57a3f",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_55928cd57a3f",
+        "order_id": "ord_29a7f0412d51",
+        "token_id": "tok_9d7c24ce85d5",
+        "amount_cents": 37439,
+        "status": "captured",
+        "created_at": "2025-02-19T05:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T05:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_0b9d7654d5c3",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_0b9d7654d5c3",
+        "order_id": "ord_4b2c8bffae57",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 98239,
+        "status": "captured",
+        "created_at": "2025-02-19T12:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T12:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_57988711e602",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_57988711e602",
+        "order_id": "ord_66386c22a1d2",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 58055,
+        "status": "captured",
+        "created_at": "2025-02-19T13:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T13:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_8ad09042ef18",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_8ad09042ef18",
+        "order_id": "ord_6b707ef6fe62",
+        "token_id": "tok_9d7c24ce85d5",
+        "amount_cents": 19502,
+        "status": "captured",
+        "created_at": "2025-02-19T13:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T13:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_a6e62c018529",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_a6e62c018529",
+        "order_id": "ord_014b683647ad",
+        "token_id": "tok_9d7c24ce85d5",
+        "amount_cents": 15812,
+        "status": "captured",
+        "created_at": "2025-02-19T15:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T15:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_e1b340eeb506",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_e1b340eeb506",
+        "payment_id": "pay_55928cd57a3f",
+        "order_id": "ord_29a7f0412d51",
+        "amount_cents": 37439,
+        "reason": "changed_mind",
+        "created_at": "2025-02-19T15:28:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T15:28:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_5f2e621e9309",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_5f2e621e9309",
+        "order_id": "ord_f2e3fdc9c0c8",
+        "token_id": "tok_9d7c24ce85d5",
+        "amount_cents": 15966,
+        "status": "captured",
+        "created_at": "2025-02-19T18:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T18:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_03c3c30dae34",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_03c3c30dae34",
+        "order_id": "ord_122533fd765e",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 113271,
+        "status": "captured",
+        "created_at": "2025-02-19T19:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T19:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_22d1b5fad3c8",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_22d1b5fad3c8",
+        "payment_id": "pay_57988711e602",
+        "order_id": "ord_66386c22a1d2",
+        "amount_cents": 58055,
+        "reason": "changed_mind",
+        "created_at": "2025-02-19T20:29:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T20:29:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_0b2aa744e14f",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_0b2aa744e14f",
+        "order_id": "ord_2f99180750a2",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 112541,
+        "status": "captured",
+        "created_at": "2025-02-19T22:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-19T22:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_c5404be9e6d5",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_c5404be9e6d5",
+        "order_id": "ord_cf998da34f94",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 141643,
+        "status": "captured",
+        "created_at": "2025-02-20T01:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-20T01:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_8e2a4c5a97d5",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_8e2a4c5a97d5",
+        "order_id": "ord_9146d391cc25",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 137313,
+        "status": "captured",
+        "created_at": "2025-02-20T02:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-20T02:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_1197aeb02ee4",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_1197aeb02ee4",
+        "order_id": "ord_9c5bad2ea9fb",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 106217,
+        "status": "captured",
+        "created_at": "2025-02-20T02:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-20T02:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_45e3e268dcae",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_45e3e268dcae",
+        "order_id": "ord_6bb17a8b26c1",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 139420,
+        "status": "captured",
+        "created_at": "2025-02-20T04:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-20T04:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_ac480aa48ab4",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_ac480aa48ab4",
+        "payment_id": "pay_7cffc54b2351",
+        "order_id": "ord_b4c0c39a4a71",
+        "amount_cents": 24148,
+        "reason": "defective",
+        "created_at": "2025-02-20T05:50:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-20T05:50:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "payment_captured",
+      "entity_type": "payment",
+      "entity_id": "pay_4dbb55598c12",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "payment_id": "pay_4dbb55598c12",
+        "order_id": "ord_4cb0fe85e418",
+        "token_id": "tok_f14dfb3efe3c",
+        "amount_cents": 142566,
+        "status": "captured",
+        "created_at": "2025-02-20T09:00:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-20T09:00:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_ca6935bdc89e",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_ca6935bdc89e",
+        "payment_id": "pay_1197aeb02ee4",
+        "order_id": "ord_9c5bad2ea9fb",
+        "amount_cents": 106217,
+        "reason": "defective",
+        "created_at": "2025-02-21T16:13:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-21T16:13:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_243bb30693f6",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_243bb30693f6",
+        "payment_id": "pay_0b9d7654d5c3",
+        "order_id": "ord_4b2c8bffae57",
+        "amount_cents": 98239,
+        "reason": "not_as_described",
+        "created_at": "2025-02-22T05:08:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-22T05:08:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_476e6a0641d0",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_476e6a0641d0",
+        "payment_id": "pay_8e2a4c5a97d5",
+        "order_id": "ord_9146d391cc25",
+        "amount_cents": 137313,
+        "reason": "duplicate_order",
+        "created_at": "2025-02-22T07:22:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-22T07:22:00+00:00",
+      "generator_version": "5.0.0"
+    },
+    {
+      "event_type": "refund_issued",
+      "entity_type": "refund",
+      "entity_id": "ref_fcebe192d479",
+      "merchant_id": "mch_bdd640fb0667",
+      "payload": {
+        "refund_id": "ref_fcebe192d479",
+        "payment_id": "pay_03c3c30dae34",
+        "order_id": "ord_122533fd765e",
+        "amount_cents": 113271,
+        "reason": "defective",
+        "created_at": "2025-02-22T09:16:00+00:00"
+      },
+      "event_label": 1,
+      "ring_id": "RING_003",
+      "scenario_id": "scn_c068a64cd5d6",
+      "generated_at": "2025-02-22T09:16:00+00:00",
+      "generator_version": "5.0.0"
+    }
+  ]
+}

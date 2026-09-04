@@ -125,6 +125,32 @@ def evaluate(
     return results
 
 
+def evaluate_ring_level(df_test, y_proba, threshold=0.5):
+    """Evaluate ring-level detection metrics."""
+    df = df_test.copy()
+    df["y_pred"] = (y_proba >= threshold).astype(int)
+
+    ground_truth_rings = set(df[df["label"] == 1]["ring_id"].dropna().unique())
+    predicted_rings = set(df[df["y_pred"] == 1]["ring_id"].dropna().unique())
+
+    true_positives = ground_truth_rings & predicted_rings
+    false_positives = predicted_rings - ground_truth_rings
+    false_negatives = ground_truth_rings - predicted_rings
+
+    ring_precision = len(true_positives) / len(predicted_rings) if predicted_rings else 0
+    ring_recall = len(true_positives) / len(ground_truth_rings) if ground_truth_rings else 0
+    ring_f1 = (2 * ring_precision * ring_recall / (ring_precision + ring_recall)) if (ring_precision + ring_recall) > 0 else 0
+
+    return {
+        "ring_precision": round(ring_precision, 4),
+        "ring_recall": round(ring_recall, 4),
+        "ring_f1": round(ring_f1, 4),
+        "ground_truth_rings": len(ground_truth_rings),
+        "predicted_rings": len(predicted_rings),
+        "true_positive_rings": len(true_positives),
+    }
+
+
 def main() -> None:
     """Run model evaluation on test data."""
     parser = argparse.ArgumentParser(

@@ -41,25 +41,32 @@ def load_data(data_dir: str) -> pd.DataFrame:
         ring_id = scenario["events"][0].get("ring_id") if scenario["events"] else None
         scenario_id = scenario.get("scenario_id", "unknown")
 
+        # Build order_id -> account_id mapping
+        order_to_acct = {}
+        for o in scenario.get("orders", []):
+            order_to_acct[o["order_id"]] = o["account_id"]
+
         for acct in scenario["accounts"]:
             acct_id = acct["account_id"]
-            acct_events = [e for e in scenario["events"] if e.get("payload", {}).get("account_id") == acct_id]
-            orders = [e for e in acct_events if e["event_type"] == "payment_captured"]
-            refunds = [e for e in acct_events if e["event_type"] == "refund_issued"]
-            total_amount = sum(e.get("payload", {}).get("amount_cents", 0) for e in orders)
+            acct_orders = [o for o in scenario.get("orders", []) if o["account_id"] == acct_id]
+            acct_order_ids = {o["order_id"] for o in acct_orders}
+            acct_payments = [p for p in scenario.get("payments", []) if p["order_id"] in acct_order_ids]
+            acct_payment_ids = {p["payment_id"] for p in acct_payments}
+            acct_refunds = [r for r in scenario.get("refunds", []) if r["payment_id"] in acct_payment_ids]
+            total_amount = sum(o.get("amount_cents", 0) for o in acct_orders)
 
             rows.append({
                 "account_id": acct_id,
                 "scenario_id": scenario_id,
                 "ring_id": ring_id,
-                "total_orders": len(orders),
-                "total_refunds": len(refunds),
+                "total_orders": len(acct_orders),
+                "total_refunds": len(acct_refunds),
                 "total_amount": total_amount,
-                "avg_amount": total_amount / len(orders) if orders else 0,
-                "max_amount": max((e.get("payload", {}).get("amount_cents", 0) for e in orders), default=0),
-                "refund_rate": len(refunds) / len(orders) if orders else 0,
-                "refund_ratio": len(refunds) / total_amount if total_amount > 0 else 0,
-                "high_amount": int(max((e.get("payload", {}).get("amount_cents", 0) for e in orders), default=0) > 100000),
+                "avg_amount": total_amount / len(acct_orders) if acct_orders else 0,
+                "max_amount": max((o.get("amount_cents", 0) for o in acct_orders), default=0),
+                "refund_rate": len(acct_refunds) / len(acct_orders) if acct_orders else 0,
+                "refund_ratio": len(acct_refunds) / total_amount if total_amount > 0 else 0,
+                "high_amount": int(max((o.get("amount_cents", 0) for o in acct_orders), default=0) > 100000),
                 "label": label,
             })
 

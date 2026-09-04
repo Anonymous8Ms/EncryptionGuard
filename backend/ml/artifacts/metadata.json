@@ -12,15 +12,15 @@
     "high_amount"
   ],
   "hyperparameters": {
-    "learning_rate": 0.01144654350951607,
-    "max_depth": 3,
-    "subsample": 0.9004080615772506,
-    "colsample_bytree": 0.717395059673428,
-    "min_child_weight": 5,
-    "gamma": 4.878603158874204,
-    "scale_pos_weight": 9.766326253704815
+    "learning_rate": 0.010359736880461563,
+    "max_depth": 10,
+    "subsample": 0.7723367856129472,
+    "colsample_bytree": 0.6337543588509937,
+    "min_child_weight": 9,
+    "gamma": 3.100971013170875,
+    "scale_pos_weight": 4.919586255127417
   },
-  "validation_prauc": 0.875,
-  "training_timestamp": "2026-09-03T13:00:33.296668+00:00",
+  "validation_prauc": 0.5874105551311434,
+  "training_timestamp": "2026-09-04T15:57:40.083336+00:00",
   "n_features": 8
 }
